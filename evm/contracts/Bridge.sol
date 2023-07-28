@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {ITaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
 import {DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
+import {SimpleTimelockedTaskAcceptorV1Proxy} from "@escrin/evm/contracts/tasks/widgets/TaskAcceptorProxy.sol";
 import {TaskHubV1Notifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-contract Bridge is Ownable, IERC721Receiver, TaskHubV1Notifier, DelegatedTaskAcceptorV1 {
+contract Bridge is
+    IERC721Receiver,
+    DelegatedTaskAcceptorV1,
+    SimpleTimelockedTaskAcceptorV1Proxy,
+    TaskHubV1Notifier,
+    Ownable
+{
     using TaskIdSelectorOps for TaskIdSelector;
 
     /// The token sent to the bridge contract is not supported or not approved.
@@ -42,27 +49,23 @@ contract Bridge is Ownable, IERC721Receiver, TaskHubV1Notifier, DelegatedTaskAcc
     event TokenApproved(address indexed token);
     event BridgingRequested(TokenDescriptor desc);
     event TokenReclaimed(TokenDescriptor indexed desc, address operator);
-    event TaskAcceptorIncoming(address acceptor);
 
     /// The time in seconds during which bridging must occur before a sent token may be reclaimed. This aims to prevent any bugs in the bridge from making tokens inaccessible.
-    uint64 public immutable bridgingTimeout;
-    /// The amount of time in seconds to delay a new task acceptor taking effect. This aims to give NFT holders time to audit the new task acceptor and reclaim their tokens, if desired. Must be longer than the `bridgingTimeout`.
-    uint64 public immutable taskAcceptorUpdateDelay;
+    uint256 public immutable bridgingTimeout;
 
     mapping(address => SupportedToken) public supportedTokens;
     mapping(uint256 /* task id */ => TokenState) public knownTokens;
 
-    address public incomingTaskAcceptor;
-    /// The earliest time at which the incoming task acceptor may be switched.
-    uint64 public incomingTaskAcceptorActiveTime;
-
     constructor(
-        uint64 _bridgingTimeout,
-        uint64 _taskAcceptorUpdateDelay,
+        uint256 _bridgingTimeout,
+        uint256 _taskAcceptorUpdateDelay,
         address _initialTaskAcceptor
-    ) TaskHubV1Notifier() DelegatedTaskAcceptorV1(_initialTaskAcceptor) {
+    )
+        DelegatedTaskAcceptorV1()
+        SimpleTimelockedTaskAcceptorV1Proxy(_initialTaskAcceptor, _taskAcceptorUpdateDelay)
+        TaskHubV1Notifier()
+    {
         bridgingTimeout = _bridgingTimeout;
-        taskAcceptorUpdateDelay = _taskAcceptorUpdateDelay;
     }
 
     function onERC721Received(
@@ -80,7 +83,7 @@ contract Bridge is Ownable, IERC721Receiver, TaskHubV1Notifier, DelegatedTaskAcc
         });
         knownTokens[getTaskId(desc)] = TokenState({
             bridged: false,
-            unlockTimestamp: uint64(block.timestamp + uint256(bridgingTimeout))
+            unlockTimestamp: uint64(block.timestamp + bridgingTimeout)
         });
 
         taskHub().notify();
@@ -89,7 +92,7 @@ contract Bridge is Ownable, IERC721Receiver, TaskHubV1Notifier, DelegatedTaskAcc
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    /// Votes to support a token with all of the tokens you hold.
+    /// Votes to support a token with all of the tokens held by the caller.
     function supportToken(address _tokenAddr) external {
         SupportedToken storage supported = supportedTokens[_tokenAddr];
         IERC721Enumerable token = IERC721Enumerable(_tokenAddr);
@@ -121,22 +124,6 @@ contract Bridge is Ownable, IERC721Receiver, TaskHubV1Notifier, DelegatedTaskAcc
             revert UnsupportedToken();
         supportedTokens[_token].quorum = (IERC721Enumerable(_token).totalSupply() >> 1) + 1;
         emit TokenProposed(_token);
-    }
-
-    function updateTaskAcceptor(address _acceptor) external onlyOwner {
-        if (_acceptor != incomingTaskAcceptor) {
-            _requireIsTaskAcceptor(_acceptor);
-            incomingTaskAcceptorActiveTime = uint64(
-                block.timestamp + uint256(taskAcceptorUpdateDelay)
-            );
-            incomingTaskAcceptor = _acceptor;
-            emit TaskAcceptorIncoming(_acceptor);
-        } else if (block.timestamp >= incomingTaskAcceptorActiveTime) {
-            _setTaskAcceptor(incomingTaskAcceptor);
-            delete incomingTaskAcceptor;
-        } else {
-            revert TooSoon();
-        }
     }
 
     function bridgingIsApproved(address token) public view returns (bool) {
