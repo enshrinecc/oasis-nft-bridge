@@ -26,17 +26,17 @@
       "import": "./deployments/emerald/Bridge.json"
     },
     "./airose/sapphire-testnet": {
-      "import": "./deployments/sapphire-testnet/NFTrout.json"
+      "import": "./deployments/sapphire-testnet/Bridge.json"
     },
     "./deployments/sapphire": {
       "import": "./deployments/sapphire/AIRose.json"
     }
   },
   "scripts": {
-    "lint:prettier": "prettier --check --plugin-search-dir=. --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
+    "lint:prettier": "prettier --check --plugin=prettier-plugin-solidity --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
     "lint:solhint": "solhint 'contracts/**/*.sol'",
     "lint": "npm-run-all lint:**",
-    "format:prettier": "prettier --write --plugin-search-dir=. --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
+    "format:prettier": "prettier --write --plugin=prettier-plugin-solidity --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
     "format:solhint": "solhint --fix 'contracts/**/*.sol'",
     "format": "npm-run-all format:**",
     "build:contracts": "hardhat compile",
