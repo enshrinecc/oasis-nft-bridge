@@ -7,7 +7,7 @@ import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165C
 
 import {BridgeEndpoint} from "./BridgeEndpoint.sol";
 
-contract Bridge is BridgeEndpoint, Ownable2Step {
+contract Portal is BridgeEndpoint, Ownable2Step {
     /// The NFT has too many tokens to be supported by this bridge.
     error TooManyTokens();
 
@@ -36,19 +36,22 @@ contract Bridge is BridgeEndpoint, Ownable2Step {
 
     /// Votes to support a token with all of the tokens held by the caller.
     function voteToSupportToken(address _tokenAddr) external {
-        SupportedToken storage supported = supportedTokens[_tokenAddr];
+        SupportedToken storage st = supportedTokens[_tokenAddr];
         IERC721Enumerable token = IERC721Enumerable(_tokenAddr);
 
         uint256 newApprovals;
         for (uint256 i; i < token.balanceOf(msg.sender); ++i) {
             uint256 heldTokenId = token.tokenOfOwnerByIndex(msg.sender, i);
-            if (supported.voted[heldTokenId]) continue;
-            supported.voted[heldTokenId] = true;
+            if (st.voted[heldTokenId]) continue;
+            st.voted[heldTokenId] = true;
             newApprovals += 1;
         }
-        supported.approvals += uint64(newApprovals);
+        st.approvals += uint64(newApprovals);
 
-        if (_tokenIsSupported(_tokenAddr)) emit TokenApproved(_tokenAddr);
+        if (st.approvals >= st.quorum) {
+            st.deactivationTime = uint64(block.timestamp + tokenSupportDuration);
+            emit TokenApproved(_tokenAddr);
+        }
     }
 
     function proposeToken(address _token) external onlyOwner {
