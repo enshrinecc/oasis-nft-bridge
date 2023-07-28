@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {BridgeEndpoint} from "./BridgeEndpoint.sol";
 
-contract Bridge is BridgeEndpoint, Ownable {
+contract Bridge is BridgeEndpoint, Ownable2Step {
     /// The NFT has too many tokens to be supported by this bridge.
     error TooManyTokens();
 
@@ -35,11 +35,11 @@ contract Bridge is BridgeEndpoint, Ownable {
     }
 
     /// Votes to support a token with all of the tokens held by the caller.
-    function supportToken(address _tokenAddr) external {
+    function voteToSupportToken(address _tokenAddr) external {
         SupportedToken storage supported = supportedTokens[_tokenAddr];
         IERC721Enumerable token = IERC721Enumerable(_tokenAddr);
 
-        uint256 newApprovals = 0;
+        uint256 newApprovals;
         for (uint256 i; i < token.balanceOf(msg.sender); ++i) {
             uint256 heldTokenId = token.tokenOfOwnerByIndex(msg.sender, i);
             if (supported.voted[heldTokenId]) continue;

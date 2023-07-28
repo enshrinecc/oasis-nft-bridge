@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ERC721A, ERC721AQueryable} from "erc721a/contracts/extensions/ERC721AQueryable.sol";
 
 import {BridgeEndpoint} from "./BridgeEndpoint.sol";
 
-contract NFT is ERC721AQueryable, BridgeEndpoint {
-    string private baseURI_;
+contract NFT is ERC721AQueryable, BridgeEndpoint, Ownable2Step {
+    event BridgeFrozen();
 
-    // Defined in https://github.com/chiru-labs/ERC721A/blob/main/contracts/ERC721A.sol
-    uint256 private constant _MAX_MINT_ERC2309_QUANTITY_LIMIT = 5000;
+    uint128 public votesToFreeze;
+    bool public frozen;
+
+    string private baseURI_;
 
     struct NFTConfig {
         string name;
@@ -20,16 +23,44 @@ contract NFT is ERC721AQueryable, BridgeEndpoint {
 
     constructor(
         NFTConfig memory _c,
-        BridgeEndpoint.Config memory _endpointConfig
+        BridgeEndpoint.Config memory _endpointConfig,
+        uint256 mintBatchSize
     ) ERC721A(_c.name, _c.symbol) BridgeEndpoint(_endpointConfig) {
         baseURI_ = _c.baseURI;
         uint256 toMint = _c.totalSupply;
         while (toMint > 0) {
-            uint256 quantity = toMint > _MAX_MINT_ERC2309_QUANTITY_LIMIT
-                ? _MAX_MINT_ERC2309_QUANTITY_LIMIT
-                : toMint;
+            uint256 quantity = toMint > mintBatchSize ? mintBatchSize : toMint;
             _mintERC2309(address(this), quantity);
             toMint -= quantity;
+        }
+    }
+
+    /// Votes with the caller's tokens to freeze the bridge and end convertibility.
+    function voteToFreezeBridge(uint256[] calldata _voice) external {
+        uint256 newVotes;
+        for (uint256 i; i < _voice.length; ++i) {
+            TokenOwnership memory ownership = _ownershipAt(_voice[i]);
+            bool voted = (ownership.extraData & 0x01) == 1;
+            if (voted || ownership.addr != msg.sender) continue;
+            newVotes += 1;
+            _setExtraDataAt(_voice[i], ownership.extraData | 0x01);
+        }
+        uint256 totalVotesToFreeze = votesToFreeze + newVotes;
+        votesToFreeze = uint128(totalVotesToFreeze);
+        if (totalVotesToFreeze > (totalSupply() >> 1)) {
+            frozen = true;
+            emit BridgeFrozen();
+        }
+    }
+
+    function transferUnclaimed(
+        uint256[] calldata _tokenIds,
+        address[] calldata _recipients
+    ) external onlyOwner {
+        if (!frozen) revert TooSoon();
+        require(_tokenIds.length == _recipients.length, "length mismatch");
+        for (uint256 i; i < _tokenIds.length; ++i) {
+            safeTransferFrom(address(this), _recipients[i], _tokenIds[i]);
         }
     }
 
@@ -42,6 +73,14 @@ contract NFT is ERC721AQueryable, BridgeEndpoint {
     }
 
     function _tokenIsSupported(address _token) internal view override returns (bool) {
-        return _token == address(this);
+        return _token == address(this) && !frozen;
+    }
+
+    function _extraData(
+        address,
+        address,
+        uint24 _previousExtraData
+    ) internal pure override returns (uint24) {
+        return _previousExtraData;
     }
 }
