@@ -19,7 +19,7 @@ contract Portal is BridgeEndpoint, Ownable2Step {
         mapping(uint256 /* token id */ => bool) voted;
     }
 
-    event TokenProposed(address indexed token);
+    event TokenProposed(address indexed token, address indexed remote);
     event TokenApproved(address indexed token);
 
     /// The length of time in seconds that a supported token will remain able to be bridged by sending it to this bridge endpoint. Tokens can still be sent to this endpoint and reclaimed.
@@ -54,14 +54,18 @@ contract Portal is BridgeEndpoint, Ownable2Step {
         }
     }
 
-    function proposeToken(address _token) external onlyOwner {
-        if (supportedTokens[_token].quorum != 0) return; // Already proposed.
+    function proposeToken(address _token, address _remote) external onlyOwner {
+        SupportedToken storage st = supportedTokens[_token];
+        if (st.quorum != 0) return;
+
         if (!ERC165Checker.supportsInterface(_token, type(IERC721Enumerable).interfaceId))
             revert UnsupportedToken();
+
         uint256 totalSupply = (IERC721Enumerable(_token).totalSupply() >> 1) + 1;
         if (totalSupply > type(uint64).max) revert TooManyTokens();
-        supportedTokens[_token].quorum = uint64(totalSupply);
-        emit TokenProposed(_token);
+
+        st.quorum = uint64(totalSupply);
+        emit TokenProposed(_token, _remote);
     }
 
     function _tokenIsSupported(address _token) internal view override returns (bool) {
