@@ -47,8 +47,8 @@ abstract contract BridgeEndpoint is
         address initialTaskAcceptor;
     }
 
-    event BridgingRequested(TokenDescriptor desc);
-    event TokenReclaimed(TokenDescriptor indexed desc, address operator);
+    event BridgingRequested(address indexed token, uint256 indexed id, address indexed holder);
+    event TokenReclaimed(address indexed token, uint256 indexed id, address indexed holder);
 
     /// The time in seconds during which bridging must occur before a sent token may be reclaimed. This aims to prevent any bugs in the bridge from making tokens inaccessible.
     uint256 public immutable bridgingTimeout;
@@ -84,7 +84,7 @@ abstract contract BridgeEndpoint is
         });
 
         taskHub().notify();
-        emit BridgingRequested(desc);
+        emit BridgingRequested(desc.token, desc.id, desc.holder);
 
         return IERC721Receiver.onERC721Received.selector;
     }
@@ -94,8 +94,8 @@ abstract contract BridgeEndpoint is
         TokenState storage tokenState = knownTokens[getTaskId(_desc)];
         if (tokenState.presence != Presence.Present) revert NotPresent();
         if (block.timestamp < uint256(tokenState.unlockTimestamp)) revert TooSoon();
-        IERC721(_desc.token).safeTransferFrom(address(this), _desc.holder, _desc.id);
-        emit TokenReclaimed(_desc, msg.sender);
+        IERC721(_desc.token).transferFrom(address(this), _desc.holder, _desc.id);
+        emit TokenReclaimed(_desc.token, _desc.id, _desc.holder);
     }
 
     function getTaskId(TokenDescriptor memory desc) public pure returns (uint256) {

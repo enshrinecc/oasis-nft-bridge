@@ -180,7 +180,7 @@ task('coverage', async (_args, hre, runSuper) => {
 
 module.exports = {
   solidity: {
-    version: '0.8.18',
+    version: '0.8.21',
     settings: {
       optimizer: {
         enabled: true,

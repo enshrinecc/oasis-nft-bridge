@@ -33,11 +33,11 @@
     }
   },
   "scripts": {
-    "lint:prettier": "prettier --check --plugin=prettier-plugin-solidity --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
-    "lint:solhint": "solhint 'contracts/**/*.sol'",
+    "lint:prettier": "prettier --check --plugin=prettier-plugin-solidity --cache '*.json' '{contracts,deploy,test}/**/*.{ts,sol}'",
+    "lint:solhint": "solhint '{contracts,test}/**/*.sol'",
     "lint": "npm-run-all lint:**",
-    "format:prettier": "prettier --write --plugin=prettier-plugin-solidity --cache '*.json' '{deploy,test}/**/*.ts' 'contracts/**/*.sol'",
-    "format:solhint": "solhint --fix 'contracts/**/*.sol'",
+    "format:prettier": "prettier --write --plugin=prettier-plugin-solidity --cache '*.json' '{contracts,deploy,test}/**/*.{ts,sol}'",
+    "format:solhint": "solhint --fix '{contracts,test}/**/*.sol'",
     "format": "npm-run-all format:**",
     "build:contracts": "hardhat compile",
     "build:lib": "tsc -b",
