@@ -10,6 +10,8 @@ import {BridgeEndpoint} from "./BridgeEndpoint.sol";
 contract Portal is BridgeEndpoint, Ownable2Step {
     /// The NFT has too many tokens to be supported by this bridge.
     error TooManyTokens();
+    /// The token has already been proposed.
+    error AlreadyProposed();
 
     struct SupportedToken {
         /// The token will become active once a majority of tokens have approved.
@@ -37,6 +39,8 @@ contract Portal is BridgeEndpoint, Ownable2Step {
     /// Votes to support a token with all of the tokens held by the caller.
     function voteToSupportToken(address _tokenAddr) external {
         SupportedToken storage st = supportedTokens[_tokenAddr];
+        if (st.quorum == 0) revert UnsupportedToken();
+
         IERC721Enumerable token = IERC721Enumerable(_tokenAddr);
 
         uint256 newApprovals;
@@ -56,7 +60,7 @@ contract Portal is BridgeEndpoint, Ownable2Step {
 
     function proposeToken(address _token, address _remote) external onlyOwner {
         SupportedToken storage st = supportedTokens[_token];
-        if (st.quorum != 0) return;
+        if (st.quorum != 0) revert AlreadyProposed();
 
         if (!ERC165Checker.supportsInterface(_token, type(IERC721Enumerable).interfaceId))
             revert UnsupportedToken();
