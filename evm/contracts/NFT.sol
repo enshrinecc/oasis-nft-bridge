@@ -7,6 +7,9 @@ import {ERC721A, ERC721AQueryable} from "erc721a/contracts/extensions/ERC721AQue
 import {BridgeEndpoint} from "./BridgeEndpoint.sol";
 
 contract NFT is ERC721AQueryable, BridgeEndpoint, Ownable2Step {
+    /// This operation cannot be performed yet.
+    error TooSoon(); // 6fed7d85 b+19hQ==
+
     event BridgeFrozen();
 
     uint128 public votesToFreeze;
@@ -23,7 +26,7 @@ contract NFT is ERC721AQueryable, BridgeEndpoint, Ownable2Step {
 
     constructor(
         NFTConfig memory _c,
-        BridgeEndpoint.Config memory _endpointConfig,
+        EndpointConfig memory _endpointConfig,
         uint256 mintBatchSize
     ) ERC721A(_c.name, _c.symbol) BridgeEndpoint(_endpointConfig) {
         baseURI_ = _c.baseURI;
@@ -72,8 +75,9 @@ contract NFT is ERC721AQueryable, BridgeEndpoint, Ownable2Step {
         return 1;
     }
 
-    function _tokenIsSupported(address _token) internal view override returns (bool) {
-        return _token == address(this) && !frozen;
+    function _tokenIsSupported(TokenDescriptor memory _desc) internal view override returns (bool) {
+        // The token is supported iff it was bridged in by the same holder.
+        return presences[getTaskId(_desc)] != TokenPresence.Unknown && !frozen;
     }
 
     function _extraData(

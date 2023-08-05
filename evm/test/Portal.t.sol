@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import {Test} from "forge-std/Test.sol";
 
+import {ITaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
 import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 import {BridgeEndpoint} from "../contracts/BridgeEndpoint.sol";
@@ -12,10 +13,18 @@ contract UnsupportedNonEnumerableNFT is ERC721 {
     constructor() ERC721("Unsupported", "BAD") {
         return;
     }
+
+    function test() public pure {
+        return;
+    }
 }
 
 contract UnsupportedUnreasonableNFT is ERC721Enumerable {
     constructor() ERC721("Unsupported", "BAD") {
+        return;
+    }
+
+    function test() public pure {
         return;
     }
 
@@ -31,6 +40,10 @@ contract MockNFT is ERC721Enumerable {
         return;
     }
 
+    function test() public pure {
+        return;
+    }
+
     function mint(address to) external returns (uint256 id) {
         nextTokenId++;
         _mint(to, nextTokenId);
@@ -39,6 +52,8 @@ contract MockNFT is ERC721Enumerable {
 }
 
 contract PortalTest is Test {
+    using TaskIdSelectorOps for ITaskAcceptorV1.TaskIdSelector;
+
     address private constant NFT_OWNER_1 = address(2345);
     address private constant NFT_OWNER_10 = address(1234);
     // The quorum will be 6.
@@ -48,8 +63,7 @@ contract PortalTest is Test {
 
     function setUp() public {
         p = new Portal(
-            BridgeEndpoint.Config({
-                bridgingTimeout: 10 minutes,
+            BridgeEndpoint.EndpointConfig({
                 taskAcceptorUpdateDelay: 7 days,
                 initialTaskAcceptor: address(42)
             }),
@@ -129,26 +143,53 @@ contract PortalTest is Test {
             "deactivationTime not set"
         );
 
-        // Expect that the transfer will succeed after the token is active.
+        // Expect that sending will succeed after the token is active.
         vm.prank(NFT_OWNER_1);
         nft.safeTransferFrom(NFT_OWNER_1, address(p), 1);
         require(nft.ownerOf(1) == address(p), "transfer failed");
 
-        // The transfer should fail once the token has been deactivated.
+        // The sending should fail once the token has been deactivated.
         vm.warp(deactivationTime);
         vm.prank(NFT_OWNER_10);
         vm.expectRevert(BridgeEndpoint.UnsupportedToken.selector);
         nft.safeTransferFrom(NFT_OWNER_10, address(p), 2);
+    }
 
-        // Ensure that tokens can still be withdrawn after deactivation.
+    function testBridgeComingFromWrongSender() public {
+        p.proposeToken(address(nft), address(888));
+
+        vm.prank(NFT_OWNER_10);
+        p.voteToSupportToken(address(nft));
+
+        vm.prank(NFT_OWNER_1);
+        nft.safeTransferFrom(NFT_OWNER_1, address(p), 1);
+
+        // First send the token over the bridge by NFT_OWNER_1.
+
         BridgeEndpoint.TokenDescriptor memory desc = BridgeEndpoint.TokenDescriptor({
             token: address(nft),
             id: 1,
             holder: NFT_OWNER_1
         });
-        // vm.expectEmit();
-        // emit BridgeEndpoint.TokenReclaimed(desc.token, desc.id, desc.holder);
-        p.reclaimToken(desc);
-        require(nft.ownerOf(1) == NFT_OWNER_1, "failed to reclaim");
+        uint256[] memory taskIds = new uint256[](1);
+        BridgeEndpoint.TokenDescriptor[] memory report = new BridgeEndpoint.TokenDescriptor[](1);
+        taskIds[0] = p.getTaskId(desc);
+        report[0] = desc;
+
+        vm.mockCall(address(p.getTaskAcceptor()), bytes(""), abi.encode(TaskIdSelectorOps.all()));
+        p.acceptTaskResults(taskIds, "", abi.encode(report));
+
+        // Now expect that the token cannot be bridged back by NFT_OWNER_10
+
+        BridgeEndpoint.TokenDescriptor memory unknownDesc = BridgeEndpoint.TokenDescriptor({
+            token: address(nft),
+            id: 1,
+            holder: NFT_OWNER_10
+        });
+        taskIds[0] = p.getTaskId(unknownDesc);
+        report[0] = unknownDesc;
+        vm.mockCall(address(p.getTaskAcceptor()), bytes(""), abi.encode(TaskIdSelectorOps.all()));
+        vm.expectRevert(BridgeEndpoint.UnsupportedToken.selector);
+        p.acceptTaskResults(taskIds, "", abi.encode(report));
     }
 }

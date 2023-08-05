@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {IERC721, IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {BridgeEndpoint} from "./BridgeEndpoint.sol";
@@ -24,13 +24,13 @@ contract Portal is BridgeEndpoint, Ownable2Step {
     event TokenProposed(address indexed token, address indexed remote);
     event TokenApproved(address indexed token);
 
-    /// The length of time in seconds that a supported token will remain able to be bridged by sending it to this bridge endpoint. Tokens can still be sent to this endpoint and reclaimed.
+    /// The length of time in seconds that a supported token will remain able to be bridged by sending it to this bridge endpoint. Tokens can still be sent to this endpoint and retrieved.
     uint64 public immutable tokenSupportDuration;
 
     mapping(address => SupportedToken) public supportedTokens;
 
     constructor(
-        BridgeEndpoint.Config memory _endpointConfig,
+        EndpointConfig memory _endpointConfig,
         uint64 _tokenSupportDuration
     ) BridgeEndpoint(_endpointConfig) {
         tokenSupportDuration = _tokenSupportDuration;
@@ -72,8 +72,20 @@ contract Portal is BridgeEndpoint, Ownable2Step {
         emit TokenProposed(_token, _remote);
     }
 
-    function _tokenIsSupported(address _token) internal view override returns (bool) {
-        SupportedToken storage st = supportedTokens[_token];
+    function _tokenIsSupported(TokenDescriptor memory _desc) internal view override returns (bool) {
+        SupportedToken storage st = supportedTokens[_desc.token];
         return st.approvals >= st.quorum && st.deactivationTime > block.timestamp;
+    }
+
+    /// @dev Tokens cannot be bridged back to the portal unless it was previously bridged from the portal by the same holder. This function reverts if an offending task result is found. The NFT contract must not accept such tokens, but we check again here for additional safety.
+    function _beforeTaskResultsAccepted(
+        uint256[] calldata _taskIds,
+        bytes calldata,
+        bytes calldata,
+        address
+    ) internal view override {
+        for (uint256 i; i < _taskIds.length; ++i) {
+            if (presences[_taskIds[i]] == TokenPresence.Unknown) revert UnsupportedToken();
+        }
     }
 }

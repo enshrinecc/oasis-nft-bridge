@@ -18,9 +18,9 @@ abstract contract BridgeEndpoint is
 
     /// The token sent to the bridge contract is not supported or not approved.
     error UnsupportedToken(); // 6a172882 ahcogg==
-    /// This operation cannot be performed yet.
-    error TooSoon(); // 6fed7d85 b+19hQ==
-    /// The token cannot be reclaimed because it is not present on this network.
+    /// The reported token descriptor does not match the corresponding task id.
+    error MismatchedTask(); // 1e377d4c Hjd9TA==
+    /// The operation cannot proceed because the token has the wrong presence.
     error NotPresent(); // faa85272 +qhScg==
 
     /// Uniquely identifies a particular NFT bound to its original holder.
@@ -30,39 +30,32 @@ abstract contract BridgeEndpoint is
         address holder;
     }
 
-    enum Presence {
+    enum TokenPresence {
+        /// The token is not known to this bridge endpoint.
         Unknown,
+        /// The token is known not to be on this network.
         Absent,
-        Present
+        /// The token is known to be on this network and is held by this endpoint.
+        Endpoint,
+        /// The token is known to be on this network and is held by an NFT wallet.
+        Wallet
     }
 
-    struct TokenState {
-        Presence presence;
-        uint64 unlockTimestamp; // Nonzero only when `status` is `Present`
-    }
+    mapping(uint256 => TokenPresence) internal presences;
 
-    struct Config {
-        uint64 bridgingTimeout;
+    struct EndpointConfig {
         uint64 taskAcceptorUpdateDelay;
         address initialTaskAcceptor;
     }
 
-    event BridgingRequested(address indexed token, uint256 indexed id, address indexed holder);
-    event TokenReclaimed(address indexed token, uint256 indexed id, address indexed holder);
-
-    /// The time in seconds during which bridging must occur before a sent token may be reclaimed. This aims to prevent any bugs in the bridge from making tokens inaccessible.
-    uint256 public immutable bridgingTimeout;
-
-    mapping(uint256 /* task id */ => TokenState) internal knownTokens;
-
     constructor(
-        Config memory _c
+        EndpointConfig memory _c
     )
         DelegatedTaskAcceptorV1()
         SimpleTimelockedTaskAcceptorV1Proxy(_c.initialTaskAcceptor, _c.taskAcceptorUpdateDelay)
         TaskHubV1Notifier()
     {
-        bridgingTimeout = _c.bridgingTimeout;
+        return;
     }
 
     function onERC721Received(
@@ -70,53 +63,60 @@ abstract contract BridgeEndpoint is
         address _from,
         uint256 _tokenId,
         bytes calldata
-    ) external returns (bytes4) {
-        if (!_tokenIsSupported(msg.sender)) revert UnsupportedToken();
-
+    ) external override returns (bytes4) {
         TokenDescriptor memory desc = TokenDescriptor({
             token: msg.sender,
             id: _tokenId,
             holder: _from
         });
-        knownTokens[getTaskId(desc)] = TokenState({
-            presence: Presence.Present,
-            unlockTimestamp: uint64(block.timestamp + bridgingTimeout)
-        });
-
+        if (!_tokenIsSupported(desc)) revert UnsupportedToken();
+        presences[getTaskId(desc)] = TokenPresence.Endpoint;
         taskHub().notify();
-        emit BridgingRequested(desc.token, desc.id, desc.holder);
-
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    /// Sends a token that is eligible to be reclaimed back to the original sender.
-    function reclaimToken(TokenDescriptor calldata _desc) external {
-        TokenState storage tokenState = knownTokens[getTaskId(_desc)];
-        if (tokenState.presence != Presence.Present) revert NotPresent();
-        if (block.timestamp < uint256(tokenState.unlockTimestamp)) revert TooSoon();
-        IERC721(_desc.token).transferFrom(address(this), _desc.holder, _desc.id);
-        emit TokenReclaimed(_desc.token, _desc.id, _desc.holder);
+    function getTokenPresence(
+        TokenDescriptor calldata _desc
+    ) external view returns (TokenPresence) {
+        return presences[getTaskId(_desc)];
     }
 
-    function getTaskId(TokenDescriptor memory desc) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(desc)));
+    function getTaskId(TokenDescriptor memory _desc) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(_desc)));
     }
 
-    function _tokenIsSupported(address token) internal virtual returns (bool);
+    function _tokenIsSupported(TokenDescriptor memory _desc) internal virtual returns (bool);
+
+    function _beforeTaskResultsAccepted(
+        uint256[] calldata _taskIds,
+        bytes calldata,
+        bytes calldata _report,
+        address
+    ) internal view virtual override {
+        TokenDescriptor[] memory descs = abi.decode(_report, (TokenDescriptor[]));
+        for (uint256 i; i < _taskIds.length; ++i) {
+            if (getTaskId(descs[i]) != _taskIds[i]) revert MismatchedTask();
+            if (presences[_taskIds[i]] == TokenPresence.Wallet) revert NotPresent();
+        }
+    }
 
     function _afterTaskResultsAccepted(
         uint256[] calldata _taskIds,
-        bytes calldata,
+        bytes calldata _report,
         address,
         TaskIdSelector memory _sel
     ) internal override {
         uint256[] memory acceptedIxs = _sel.indices(_taskIds);
+        TokenDescriptor[] memory descs = abi.decode(_report, (TokenDescriptor[]));
         for (uint256 i; i < acceptedIxs.length; ++i) {
-            TokenState storage state = knownTokens[_taskIds[acceptedIxs[i]]];
-            state.presence = state.presence == Presence.Present
-                ? Presence.Absent
-                : Presence.Present;
-            state.unlockTimestamp = 0;
+            uint256 taskId = _taskIds[acceptedIxs[i]];
+            TokenDescriptor memory desc = descs[acceptedIxs[i]];
+            if (presences[taskId] == TokenPresence.Endpoint) {
+                presences[taskId] = TokenPresence.Absent;
+            } else {
+                IERC721(desc.token).transferFrom(address(this), desc.holder, desc.id);
+                presences[taskId] = TokenPresence.Wallet;
+            }
         }
     }
 }
