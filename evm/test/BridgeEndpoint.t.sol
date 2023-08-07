@@ -47,6 +47,19 @@ contract MockBridgeEndpoint is BridgeEndpoint {
     function _tokenIsSupported(TokenDescriptor memory _desc) internal view override returns (bool) {
         return support[_desc.token];
     }
+
+    function _getHeldTokens(
+        address _token,
+        uint256,
+        uint256
+    ) internal view override returns (uint256[] memory) {
+        if (!support[_token]) return new uint256[](0);
+        uint256[] memory tokens = new uint256[](3);
+        tokens[0] = 1;
+        tokens[1] = 2;
+        tokens[2] = 3;
+        return tokens;
+    }
 }
 
 contract BridgeEndpointTest is Test {

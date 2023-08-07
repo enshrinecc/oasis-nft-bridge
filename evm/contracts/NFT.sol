@@ -67,6 +67,15 @@ contract NFT is ERC721AQueryable, BridgeEndpoint, Ownable2Step {
         }
     }
 
+    function _getHeldTokens(
+        address _token,
+        uint256 _start,
+        uint256 _stop
+    ) internal view override returns (uint256[] memory) {
+        if (_token != address(this)) return new uint256[](0);
+        return this.tokensOfOwnerIn(address(this), _start, _stop);
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return baseURI_;
     }

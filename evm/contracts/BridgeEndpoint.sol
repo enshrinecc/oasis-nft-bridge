@@ -81,11 +81,39 @@ abstract contract BridgeEndpoint is
         return presences[getTaskId(_desc)];
     }
 
+    function getPendingTokens(
+        address _token,
+        uint256 _start,
+        uint256 _stop
+    ) external view returns (uint256[] memory) {
+        uint256[] memory tokens = _getHeldTokens(_token, _start, _stop);
+        uint256 writeIndex = 0;
+        for (uint256 i; i < tokens.length; ++i) {
+            TokenDescriptor memory desc = TokenDescriptor({
+                token: _token,
+                id: tokens[i],
+                holder: address(this)
+            });
+            if (presences[getTaskId(desc)] != TokenPresence.Endpoint) continue;
+            tokens[writeIndex++] = tokens[i];
+        }
+        assembly {
+            mstore(tokens, writeIndex) // unsafely set the array length
+        }
+        return tokens;
+    }
+
     function getTaskId(TokenDescriptor memory _desc) public pure returns (uint256) {
         return uint256(keccak256(abi.encode(_desc)));
     }
 
     function _tokenIsSupported(TokenDescriptor memory _desc) internal virtual returns (bool);
+
+    function _getHeldTokens(
+        address _token,
+        uint256 _start,
+        uint256 _stop
+    ) internal view virtual returns (uint256[] memory);
 
     function _beforeTaskResultsAccepted(
         uint256[] calldata _taskIds,

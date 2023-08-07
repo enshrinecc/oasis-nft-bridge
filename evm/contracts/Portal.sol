@@ -77,6 +77,29 @@ contract Portal is BridgeEndpoint, Ownable2Step {
         return st.approvals >= st.quorum && st.deactivationTime > block.timestamp;
     }
 
+    function _getHeldTokens(
+        address _token,
+        uint256 _start,
+        uint256 _stop
+    ) internal view override returns (uint256[] memory) {
+        if (supportedTokens[_token].quorum == 0) {
+            return new uint256[](0);
+        }
+        IERC721Enumerable token = IERC721Enumerable(_token);
+        uint256 balance = token.balanceOf(address(this));
+        uint256[] memory tokens = new uint256[](balance);
+        uint256 inBounds = 0;
+        for (uint256 i; i < balance; ++i) {
+            uint256 id = token.tokenOfOwnerByIndex(address(this), i);
+            if (id < _start || id >= _stop) continue;
+            tokens[inBounds++] = id;
+        }
+        assembly {
+            mstore(tokens, inBounds) // unsafely set the array length
+        }
+        return tokens;
+    }
+
     /// @dev Tokens cannot be bridged back to the portal unless it was previously bridged from the portal by the same holder. This function reverts if an offending task result is found. The NFT contract must not accept such tokens, but we check again here for additional safety.
     function _beforeTaskResultsAccepted(
         uint256[] calldata _taskIds,
