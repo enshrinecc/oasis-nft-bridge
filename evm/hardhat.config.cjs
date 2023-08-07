@@ -1,9 +1,13 @@
+const path = require('node:path');
+const { promises: fs } = require('node:fs');
+
+const canonicalize = require('canonicalize');
 const { task } = require('hardhat/config');
 
 // import '@oasisprotocol/sapphire-hardhat';
-require('@typechain/hardhat')
-require('@nomicfoundation/hardhat-ethers')
-require('@nomicfoundation/hardhat-chai-matchers')
+require('@typechain/hardhat');
+require('@nomicfoundation/hardhat-ethers');
+require('@nomicfoundation/hardhat-chai-matchers');
 require('hardhat-watcher');
 require('hardhat-deploy');
 require('hardhat-deploy-ethers');
@@ -13,6 +17,24 @@ const accounts = process.env.PRIVATE_KEY
   : process.env.MNEMONIC
   ? { mnemonic: process.env.MNEMONIC }
   : [];
+
+task('export-abis', async (_args, hre) => {
+  const srcDir = path.basename(hre.config.paths.sources);
+  const outDir = path.join(hre.config.paths.root, 'abis');
+
+  const [artifactNames] = await Promise.all([
+    hre.artifacts.getAllFullyQualifiedNames(),
+    fs.mkdir(outDir, { recursive: true }),
+  ]);
+
+  await Promise.all(
+    artifactNames.map(async (fqn) => {
+      const { abi, contractName, sourceName } = await hre.artifacts.readArtifact(fqn);
+      if (abi.length === 0 || !sourceName.startsWith(srcDir)) return;
+      await fs.writeFile(`${path.join(outDir, contractName)}.json`, `${canonicalize(abi)}\n`);
+    }),
+  );
+});
 
 task('accounts').setAction(async (_, hre) => {
   const { ethers } = hre;
@@ -32,7 +54,7 @@ task('accounts').setAction(async (_, hre) => {
 task('mint').setAction(async (_, hre) => {
   const { ethers } = hre;
   const [{ address: minter }] = await ethers.getSigners();
-  const nftrout = (await ethers.getContract('NFTrout'));
+  const nftrout = await ethers.getContract('NFTrout');
   const tx = await nftrout.mint({ value: await nftrout.callStatic.getBreedingFee(minter, 0, 0) });
   const receipt = await tx.wait();
   for (const event of receipt.events) {
@@ -47,7 +69,7 @@ task('breed')
   .addPositionalParam('right')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const [{ address: breeder }] = await ethers.getSigners();
     const breedingFee = await nftrout.callStatic.getBreedingFee(breeder, args.left, args.right);
     const tx = await nftrout.breed(args.left, args.right, {
@@ -66,7 +88,7 @@ task('uri')
   .addParam('id')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     console.log(await nftrout.callStatic.tokenURI(args.id));
   });
 
@@ -75,7 +97,7 @@ task('make-breedable')
   .addParam('fee')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.list(args.id, ethers.utils.parseEther(args.fee));
     console.log(tx.hash);
     await tx.wait();
@@ -86,7 +108,7 @@ task('transfer')
   .addParam('to')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.transferFrom(await nftrout.signer.getAddress(), args.to, args.id);
     console.log(tx.hash);
     await tx.wait();
@@ -94,7 +116,7 @@ task('transfer')
 
 task('list-breedable').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = (await ethers.getContract('NFTrout'));
+  const nftrout = await ethers.getContract('NFTrout');
   const { number: blockTag } = await ethers.provider.getBlock('latest');
   const batchSize = 100;
   for (let offset = 0; ; offset += batchSize) {
@@ -119,7 +141,7 @@ task('list-breedable').setAction(async (_, hre) => {
 
 task('get-owners').setAction(async (_, hre) => {
   const { ethers } = hre;
-  const nftrout = (await ethers.getContract('NFTrout'));
+  const nftrout = await ethers.getContract('NFTrout');
   const totalSupply = (await nftrout.callStatic.totalSupply()).toNumber();
   const ownerPs = [];
   for (let i = 1; i <= totalSupply; i++) {
@@ -135,7 +157,7 @@ task('set-matchmaking-bps')
   .addParam('value')
   .setAction(async (args, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const newMatchBps = ethers.BigNumber.from(args.matchmakingBps);
     const tx = await nftrout.setMatchmakingFee(newMatchBps);
     console.log(tx.hash);
@@ -146,7 +168,7 @@ task('set-task-acceptor')
   .addParam('addr')
   .setAction(async ({ addr }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.setTaskAcceptor(addr);
     console.log(tx.hash);
     await tx.wait();
@@ -156,7 +178,7 @@ task('set-mint-reward')
   .addParam('value')
   .setAction(async ({ value }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const newMintReward = ethers.utils.parseEther(value);
     const tx = await nftrout.setMintReward(newMintReward);
     console.log(tx.hash);
@@ -167,7 +189,7 @@ task('transfer-ownership')
   .addPositionalParam('owner')
   .setAction(async ({ owner }, hre) => {
     const { ethers } = hre;
-    const nftrout = (await ethers.getContract('NFTrout'));
+    const nftrout = await ethers.getContract('NFTrout');
     const tx = await nftrout.transferOwnership(owner);
     console.log(tx.hash);
     await tx.wait();
@@ -208,7 +230,7 @@ module.exports = {
     },
     hyperspace: {
       url: 'https://rpc.ankr.com/filecoin_testnet',
-      chainId: 314159.,
+      chainId: 314159,
       accounts,
     },
     filecoin: {
