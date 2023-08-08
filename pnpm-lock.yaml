@@ -93,7 +93,7 @@ importers:
 
   worker:
     dependencies:
-      '@enshrine/ai-rose-evm':
+      '@enshrine/nft-bridge-evm':
         specifier: link:../evm
         version: link:../evm
       '@escrin/worker':
