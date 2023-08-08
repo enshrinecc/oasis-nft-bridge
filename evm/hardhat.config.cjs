@@ -19,7 +19,7 @@ const accounts = process.env.PRIVATE_KEY
   : [];
 
 task('export-abis', async (_args, hre) => {
-  hre.run('compile');
+  await hre.run('compile');
 
   const srcDir = path.basename(hre.config.paths.sources);
   const outDir = path.join(hre.config.paths.root, 'abis');
