@@ -1,15 +1,9 @@
-node_modules
-coverage
+coverage/
 coverage.json
-lib/
-deployments/local*
 
 # Compiler files
-artifacts/
 cache/
 out/
-typechain/
-typechain-types/
 
 # Ignores development broadcast logs
 !/broadcast
