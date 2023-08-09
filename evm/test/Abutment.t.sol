@@ -3,13 +3,10 @@ pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {
-    ITaskAcceptorV1,
-    TaskIdSelectorOps
-} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
-import {IERC721, ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ITaskAcceptorV1, TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
+import {IERC721, ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-import {Abutment} from "../contracts/Abutment.sol";
+import {Abutment} from "../src/Abutment.sol";
 
 contract MockNFT is ERC721 {
     uint256 private nextTokenId;

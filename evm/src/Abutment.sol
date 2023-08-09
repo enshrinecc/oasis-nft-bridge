@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
 import {DelegatedTaskAcceptorV1} from
-    "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
+    "escrin/tasks/acceptor/DelegatedTaskAcceptor.sol";
 import {SimpleTimelockedTaskAcceptorV1Proxy} from
-    "@escrin/evm/contracts/tasks/widgets/TaskAcceptorProxy.sol";
-import {TaskHubV1Notifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+    "escrin/tasks/widgets/TaskAcceptorProxy.sol";
+import {TaskHubV1Notifier} from "escrin/tasks/widgets/TaskHubNotifier.sol";
+import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Receiver} from "openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {EnumerableSet} from "openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 abstract contract Abutment is
     IERC721Receiver,

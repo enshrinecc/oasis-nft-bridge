@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {
     IERC721,
     IERC721Enumerable
-} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+} from "openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {Abutment} from "./Abutment.sol";
 

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {Abutment} from "../contracts/Abutment.sol";
-import {EmeraldAbutment} from "../contracts/EmeraldAbutment.sol";
-import {SapphireAbutment} from "../contracts/SapphireAbutment.sol";
+import {Abutment} from "../src/Abutment.sol";
+import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
+import {SapphireAbutment} from "../src/SapphireAbutment.sol";
 
 abstract contract DeploymentScript is Script {
     function _abutmentConfig() internal view returns (Abutment.AbutmentConfig memory) {

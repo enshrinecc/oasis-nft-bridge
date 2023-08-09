@@ -3,17 +3,14 @@ pragma solidity ^0.8.9;
 
 import {Test} from "forge-std/Test.sol";
 
-import {
-    ITaskAcceptorV1,
-    TaskIdSelectorOps
-} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {ITaskAcceptorV1, TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
 import {
     ERC721,
     ERC721Enumerable
-} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+} from "openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
-import {Abutment} from "../contracts/Abutment.sol";
-import {EmeraldAbutment} from "../contracts/EmeraldAbutment.sol";
+import {Abutment} from "../src/Abutment.sol";
+import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
 
 contract UnsupportedNonEnumerableNFT is ERC721 {
     constructor() ERC721("Unsupported", "BAD") {
