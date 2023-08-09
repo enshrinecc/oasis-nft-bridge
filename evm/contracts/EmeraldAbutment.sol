@@ -2,7 +2,10 @@
 pragma solidity ^0.8.18;
 
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC721, IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {
+    IERC721,
+    IERC721Enumerable
+} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import {Abutment} from "./Abutment.sol";
@@ -16,10 +19,9 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
 
     mapping(IERC721 => uint256) public deactivationTimes;
 
-    constructor(
-        AbutmentConfig memory _endpointConfig,
-        uint64 _tokenSupportDuration
-    ) Abutment(_endpointConfig) {
+    constructor(AbutmentConfig memory _endpointConfig, uint64 _tokenSupportDuration)
+        Abutment(_endpointConfig)
+    {
         tokenSupportDuration = _tokenSupportDuration;
     }
 
@@ -34,8 +36,9 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
     }
 
     function proposeToken(address _token, address _remote) external onlyOwner {
-        if (!ERC165Checker.supportsInterface(_token, type(IERC721Enumerable).interfaceId))
+        if (!ERC165Checker.supportsInterface(_token, type(IERC721Enumerable).interfaceId)) {
             revert UnsupportedToken();
+        }
         IERC721 token = IERC721(_token);
         _addCollection(token, _remote, IERC721Enumerable(_token).totalSupply());
         emit TokenProposed(token);
@@ -62,8 +65,9 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
         BridgeAction[] memory actions = abi.decode(_report, (BridgeAction[]));
         for (uint256 i; i < actions.length; ++i) {
             BridgeAction memory action = actions[i];
-            if (tokens[action.token][action.tokenId].presence == Presence.Unknown)
+            if (tokens[action.token][action.tokenId].presence == Presence.Unknown) {
                 revert UnsupportedToken();
+            }
         }
     }
 }

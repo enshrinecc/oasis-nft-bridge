@@ -3,7 +3,10 @@ pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ITaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {
+    ITaskAcceptorV1,
+    TaskIdSelectorOps
+} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
 import {IERC721, ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import {Abutment} from "../contracts/Abutment.sol";
@@ -31,10 +34,7 @@ contract MockAbutment is Abutment {
 
     constructor()
         Abutment(
-            Abutment.AbutmentConfig({
-                taskAcceptorUpdateDelay: 7 days,
-                initialTaskAcceptor: address(42)
-            })
+            Abutment.AbutmentConfig({taskAcceptorUpdateDelay: 7 days, initialTaskAcceptor: address(42)})
         )
     {
         return;
@@ -198,10 +198,7 @@ contract AbutmentTest is Test {
 
         ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report));
 
-        require(
-            _getPresence(nft, tokenIdComing) == Abutment.Presence.Wallet,
-            "presence not wallet"
-        );
+        require(_getPresence(nft, tokenIdComing) == Abutment.Presence.Wallet, "presence not wallet");
         assertEq(nft.ownerOf(tokenIdComing), address(this));
 
         require(_getPresence(nft, tokenIdGoing) == Abutment.Presence.Absent, "presence not absent");

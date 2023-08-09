@@ -2,7 +2,10 @@
 pragma solidity ^0.8.18;
 
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC721, IERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {
+    IERC721,
+    IERC721Enumerable
+} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {IERC721A, IERC721AQueryable} from "erc721a/contracts/extensions/IERC721AQueryable.sol";
 
@@ -12,9 +15,7 @@ contract SapphireAbutment is Abutment, Ownable2Step {
     event TokenSupported(IERC721 indexed token);
     event TokenFrozen(IERC721 indexed token);
 
-    constructor(AbutmentConfig memory _endpointConfig) Abutment(_endpointConfig) {
-        return;
-    }
+    constructor(AbutmentConfig memory _endpointConfig) Abutment(_endpointConfig) {}
 
     /// A convenience method that abstracts over IERC721Enumerable and ERC721AQueryable.
     function getAbutmentTokens(IERC721 _token) external view override returns (uint256[] memory) {
@@ -31,8 +32,9 @@ contract SapphireAbutment is Abutment, Ownable2Step {
 
     // The caller must manually verify the details of the added contract.
     function supportToken(address _token, address _remote) external onlyOwner {
-        if (!ERC165Checker.supportsInterface(_token, type(IERC721).interfaceId))
+        if (!ERC165Checker.supportsInterface(_token, type(IERC721).interfaceId)) {
             revert UnsupportedToken();
+        }
         uint256 supply = IERC721Enumerable(_token).totalSupply(); // works for erc721a as well
         IERC721 token = IERC721(_token);
         require(token.balanceOf(address(this)) == supply, "not fully provisioned");

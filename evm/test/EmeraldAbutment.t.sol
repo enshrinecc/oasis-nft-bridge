@@ -3,8 +3,14 @@ pragma solidity ^0.8.9;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ITaskAcceptorV1, TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
-import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {
+    ITaskAcceptorV1,
+    TaskIdSelectorOps
+} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
+import {
+    ERC721,
+    ERC721Enumerable
+} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 import {Abutment} from "../contracts/Abutment.sol";
 import {EmeraldAbutment} from "../contracts/EmeraldAbutment.sol";
@@ -72,7 +78,9 @@ contract EmeraldAbutmentTest is Test {
         nft = new MockNFT();
 
         nft.mint(NFT_OWNER_1);
-        for (uint256 i; i < 10; ++i) nft.mint(NFT_OWNER_10);
+        for (uint256 i; i < 10; ++i) {
+            nft.mint(NFT_OWNER_10);
+        }
     }
 
     function testProposeToken() public {

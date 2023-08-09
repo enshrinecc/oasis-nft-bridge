@@ -13,3 +13,6 @@ sapphire-testnet = "https://testnet.sapphire.oasis.dev"
 sapphire-mainnet = "https://sapphire.oasis.io"
 emerald-testnet = "https://testnet.emerald.oasis.dev"
 emerald-mainnet = "https://emerald.oasis.io"
+
+[fmt]
+line_length = 100

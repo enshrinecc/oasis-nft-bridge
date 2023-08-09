@@ -2,8 +2,10 @@
 pragma solidity ^0.8.18;
 
 import {TaskIdSelectorOps} from "@escrin/evm/contracts/tasks/acceptor/TaskAcceptor.sol";
-import {DelegatedTaskAcceptorV1} from "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
-import {SimpleTimelockedTaskAcceptorV1Proxy} from "@escrin/evm/contracts/tasks/widgets/TaskAcceptorProxy.sol";
+import {DelegatedTaskAcceptorV1} from
+    "@escrin/evm/contracts/tasks/acceptor/DelegatedTaskAcceptor.sol";
+import {SimpleTimelockedTaskAcceptorV1Proxy} from
+    "@escrin/evm/contracts/tasks/widgets/TaskAcceptorProxy.sol";
 import {TaskHubV1Notifier} from "@escrin/evm/contracts/tasks/widgets/TaskHubNotifier.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -28,7 +30,6 @@ abstract contract Abutment is
     error TooSoon(); // 6fed7d85 b+19hQ==
 
     enum Presence {
-        /// The token is not known to this abutment.
         Unknown,
         /// The token is known not to be on this network.
         Absent,
@@ -73,9 +74,7 @@ abstract contract Abutment is
         address initialTaskAcceptor;
     }
 
-    constructor(
-        AbutmentConfig memory _c
-    )
+    constructor(AbutmentConfig memory _c)
         DelegatedTaskAcceptorV1()
         SimpleTimelockedTaskAcceptorV1Proxy(_c.initialTaskAcceptor, _c.taskAcceptorUpdateDelay)
         TaskHubV1Notifier()
@@ -102,12 +101,11 @@ abstract contract Abutment is
         }
     }
 
-    function onERC721Received(
-        address,
-        address _from,
-        uint256 _tokenId,
-        bytes calldata
-    ) external override returns (bytes4) {
+    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata)
+        external
+        override
+        returns (bytes4)
+    {
         if (!supportedCollections.contains(msg.sender)) revert UnsupportedToken();
         IERC721 token = IERC721(msg.sender);
         _beforeReceiveToken(token, _tokenId);
@@ -116,7 +114,11 @@ abstract contract Abutment is
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function getVoteStatus(IERC721 _token) public view returns (uint256 approvals, uint256 quorum) {
+    function getVoteStatus(IERC721 _token)
+        public
+        view
+        returns (uint256 approvals, uint256 quorum)
+    {
         Collection storage coll = collections[_token];
         if (coll.quorum == 0) revert UnsupportedToken();
         return (coll.approvingVotes, coll.quorum);
@@ -139,10 +141,11 @@ abstract contract Abutment is
     /// @dev An abstraction over IERC721Enumerable and ERC721AQueryable that gets all items owned by the abutment for a particular collection. This should work for all Oasis collections that are very small and do not need pagination. This could cost a lot of gas, so it should not be called in a tx.
     function getAbutmentTokens(IERC721 _token) external view virtual returns (uint256[] memory);
 
-    function getTokenStatuses(
-        IERC721 _token,
-        uint256[] calldata _ids
-    ) external view returns (Token[] memory) {
+    function getTokenStatuses(IERC721 _token, uint256[] calldata _ids)
+        external
+        view
+        returns (Token[] memory)
+    {
         Token[] memory ts = new Token[](_ids.length);
         for (uint256 i; i < _ids.length; ++i) {
             ts[i] = tokens[_token][_ids[i]];
