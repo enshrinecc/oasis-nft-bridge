@@ -4,32 +4,45 @@ import { Abutment, ActionEffect, BridgeAction, Presence } from './abutment.js';
 
 export async function bridge(from: Abutment, to: Abutment): Promise<void> {
   const supportedCollections = await from.getSupportedCollections();
-  const actions: Omit<BridgeAction, 'effect'>[] = [];
+  const releaseActions: BridgeAction[] = [];
+  const lockActions: BridgeAction[] = [];
   for (const collection of supportedCollections) {
-    for (const { id, owner } of await getCollectionPendingTokens(from, collection)) {
-      actions.push({
+    const pendingTokens = await getCollectionPendingTokens(from, collection);
+    if (pendingTokens.length === 0) continue;
+    const remote = await from.getRemoteToken(collection);
+    for (const { id, owner } of pendingTokens) {
+      releaseActions.push({
+        token: remote,
+        tokenId: id,
+        recipient: owner,
+        effect: ActionEffect.Release,
+      });
+      lockActions.push({
         token: collection,
         tokenId: id,
         recipient: owner,
+        effect: ActionEffect.Lock,
       });
     }
   }
+
+  await submit('🔓', to, releaseActions);
+  await submit('🔒', from, lockActions);
+}
+
+async function submit(
+  actionName: string,
+  abutment: Abutment,
+  actions: BridgeAction[],
+): Promise<void> {
   try {
-    const tx = await to.submitTaskResults(
-      actions.map((action) => ({ ...action, effect: ActionEffect.Release })),
-    );
-    await tx.wait();
+    if (actions.length > 0) {
+      console.log(`${actionName} ${actions.length} tokens`);
+      const tx = await abutment.submitTaskResults(actions);
+      await tx.wait();
+    }
   } catch (e: any) {
-    console.error('failed to release tokens:', e);
-    throw e;
-  }
-  try {
-    const tx = await from.submitTaskResults(
-      actions.map((action) => ({ ...action, effect: ActionEffect.Lock })),
-    );
-    await tx.wait();
-  } catch (e: any) {
-    console.error('failed to lock tokens:', e);
+    console.error(`failed to ${actionName} tokens:`, e);
     throw e;
   }
 }

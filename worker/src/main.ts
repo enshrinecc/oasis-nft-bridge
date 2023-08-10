@@ -18,22 +18,24 @@ type NetworkConfig = {
   abutment: Address;
 };
 
-escrinWorker({
+export default escrinWorker({
   async tasks(rnr: EscrinRunner): Promise<void> {
     const config = validateConfig(await rnr.getConfig());
 
-    const keystore = config.env === 'local' ? 'local' : (`sapphire-${config.env}` as const);
-    const wallet = await deriveWallet(await rnr.getOmniKey(keystore));
+    const omniKey = await rnr.getOmniKey(`sapphire-${config.env}`);
+    const wallet = await deriveWallet(omniKey);
 
     const emeraldAbutment = await makeAbutment('emerald', config, wallet);
     const sapphireAbutment = await makeAbutment('sapphire', config, wallet);
 
     try {
+      console.log('emerald 🌉 sapphire');
       await bridge(emeraldAbutment, sapphireAbutment);
     } catch (e: any) {
       console.error('failed to bridge from emerald to sapphire', e);
     }
     try {
+      console.log('sapphire 🌉 emerald');
       await bridge(sapphireAbutment, emeraldAbutment);
     } catch (e: any) {
       console.error('failed to bridge from sapphire to emerald', e);

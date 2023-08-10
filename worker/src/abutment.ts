@@ -17,6 +17,15 @@ export class Abutment {
     });
   }
 
+  public async getRemoteToken(collection: Address): Promise<Address> {
+    return this.publicClient.readContract({
+      address: this.address,
+      abi: AbutmentAbi,
+      functionName: 'getRemote',
+      args: [collection],
+    });
+  }
+
   public async getAbutmentTokens(collection: Address): Promise<readonly bigint[]> {
     return this.publicClient.readContract({
       address: this.address,

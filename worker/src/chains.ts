@@ -1,4 +1,4 @@
-import { Chain } from 'viem'
+import { Chain } from 'viem';
 import { localhost } from 'viem/chains';
 
 export const sapphire = {
@@ -23,7 +23,7 @@ export const sapphire = {
       blockCreated: 734531,
     },
   },
-} as const satisfies Chain
+} as Chain;
 
 export const emerald = {
   id: 0xa516,
@@ -41,7 +41,7 @@ export const emerald = {
   blockExplorers: {
     default: { name: 'Oasis Explorer', url: 'https://explorer.oasis.io/mainnet/emerald' },
   },
-} as const satisfies Chain
+} as Chain;
 
 export const sapphireTestnet = {
   id: 0x5aff,
@@ -59,7 +59,7 @@ export const sapphireTestnet = {
   blockExplorers: {
     default: { name: 'Oasis Explorer', url: 'https://explorer.oasis.io/testnet/sapphire' },
   },
-} as const satisfies Chain
+} as Chain;
 
 export const emeraldTestnet = {
   id: 0xa516,
@@ -77,10 +77,10 @@ export const emeraldTestnet = {
   blockExplorers: {
     default: { name: 'Oasis Explorer', url: 'https://explorer.oasis.io/testnet/emerald' },
   },
-} as const satisfies Chain
+} as Chain;
 
-export default function(name: string): Chain {
-  if (name === 'local') return localhost;
+export default function (name: string): Chain {
+  if (name === 'local') return { ...localhost, id: 31337 };
   if (name === 'sapphire-testnet') return sapphireTestnet;
   if (name === 'sapphire-mainnet') return sapphire;
   if (name === 'emerald-testnet') return emeraldTestnet;
