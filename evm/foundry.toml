@@ -1,9 +1,8 @@
 [profile.default]
 solc_version = "0.8.19"
-optimizer_runs = 30_000
-via_ir = true
 
 remappings = [
+  "@oasisprotocol/sapphire-contracts/contracts=lib/sapphire-paratime/contracts/contracts",
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts",
   "openzeppelin/contracts/=lib/openzeppelin-contracts/contracts",
   "escrin/=lib/escrin/evm/contracts"
@@ -17,3 +16,7 @@ emerald-mainnet = "https://emerald.oasis.io"
 
 [fmt]
 line_length = 100
+
+[profile.release]
+optimizer_runs = 30_000
+via_ir = true

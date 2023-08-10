@@ -2,10 +2,8 @@
 pragma solidity ^0.8.18;
 
 import {TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
-import {DelegatedTaskAcceptorV1} from
-    "escrin/tasks/acceptor/DelegatedTaskAcceptor.sol";
-import {SimpleTimelockedTaskAcceptorV1Proxy} from
-    "escrin/tasks/widgets/TaskAcceptorProxy.sol";
+import {DelegatedTaskAcceptorV1} from "escrin/tasks/acceptor/DelegatedTaskAcceptor.sol";
+import {SimpleTimelockedTaskAcceptorV1Proxy} from "escrin/tasks/widgets/TaskAcceptorProxy.sol";
 import {TaskHubV1Notifier} from "escrin/tasks/widgets/TaskHubNotifier.sol";
 import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -92,7 +90,7 @@ abstract contract Abutment is
             uint256 id = _tokenIds[i];
             if (_token.ownerOf(id) != msg.sender || coll.voted[id]) continue;
             coll.voted[id] = true;
-            newApprovals += 1;
+            newApprovals++;
         }
         coll.approvingVotes += uint64(newApprovals);
 

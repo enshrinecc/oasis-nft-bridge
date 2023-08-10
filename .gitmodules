@@ -10,3 +10,6 @@
 [submodule "evm/lib/escrin"]
 	path = evm/lib/escrin
 	url = https://github.com/escrin/escrin
+[submodule "evm/lib/sapphire-paratime"]
+	path = evm/lib/sapphire-paratime
+	url = https://github.com/oasisprotocol/sapphire-paratime

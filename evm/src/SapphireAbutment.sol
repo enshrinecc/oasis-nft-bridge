@@ -35,9 +35,7 @@ contract SapphireAbutment is Abutment, Ownable2Step {
         if (!ERC165Checker.supportsInterface(_token, type(IERC721).interfaceId)) {
             revert UnsupportedToken();
         }
-        uint256 supply = IERC721Enumerable(_token).totalSupply(); // works for erc721a as well
         IERC721 token = IERC721(_token);
-        require(token.balanceOf(address(this)) == supply, "not fully provisioned");
         _addCollection(token, _remote, IERC721Enumerable(_token).totalSupply());
         _addCollectionSupport(token);
         emit TokenSupported(token);

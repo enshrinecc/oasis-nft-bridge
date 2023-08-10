@@ -58,8 +58,8 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
     /// @dev Tokens cannot be bridged back to the Emerald abutment unless it was previously bridged from the portal by the same holder. This function reverts if an offending task result is found. The Saphire abutment must not accept such tokens, but we check again here for additional safety.
     function _beforeTaskResultsAccepted(
         uint256[] calldata,
-        bytes calldata _report,
         bytes calldata,
+        bytes calldata _report,
         address
     ) internal view override {
         BridgeAction[] memory actions = abi.decode(_report, (BridgeAction[]));
