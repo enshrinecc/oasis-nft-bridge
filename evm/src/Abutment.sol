@@ -72,58 +72,54 @@ abstract contract Abutment is
         address initialTaskAcceptor;
     }
 
-    constructor(AbutmentConfig memory _c)
+    constructor(AbutmentConfig memory c)
         DelegatedTaskAcceptorV1()
-        SimpleTimelockedTaskAcceptorV1Proxy(_c.initialTaskAcceptor, _c.taskAcceptorUpdateDelay)
+        SimpleTimelockedTaskAcceptorV1Proxy(c.initialTaskAcceptor, c.taskAcceptorUpdateDelay)
         TaskHubV1Notifier()
     {
         return;
     }
 
     /// Votes to take action on the token with the weight of the provided token IDs.
-    function vote(IERC721 _token, uint256[] calldata _tokenIds) external {
-        Collection storage coll = collections[_token];
+    function vote(IERC721 token, uint256[] calldata tokenIds) external {
+        Collection storage coll = collections[token];
         if (coll.quorum == 0) revert UnsupportedToken();
 
         uint256 newApprovals;
-        for (uint256 i; i < _tokenIds.length; ++i) {
-            uint256 id = _tokenIds[i];
-            if (_token.ownerOf(id) != msg.sender || coll.voted[id]) continue;
+        for (uint256 i; i < tokenIds.length; ++i) {
+            uint256 id = tokenIds[i];
+            if (token.ownerOf(id) != msg.sender || coll.voted[id]) continue;
             coll.voted[id] = true;
             newApprovals++;
         }
         coll.approvingVotes += uint64(newApprovals);
 
         if (coll.approvingVotes >= coll.quorum) {
-            _onBallotApproved(_token);
+            _onBallotApproved(token);
         }
     }
 
-    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata)
+    function onERC721Received(address, address from, uint256 tokenId, bytes calldata)
         external
         override
         returns (bytes4)
     {
         if (!supportedCollections.contains(msg.sender)) revert UnsupportedToken();
         IERC721 token = IERC721(msg.sender);
-        _beforeReceiveToken(token, _tokenId);
-        tokens[token][_tokenId] = Token({owner: _from, presence: Presence.Abutment});
+        _beforeReceiveToken(token, tokenId);
+        tokens[token][tokenId] = Token({owner: from, presence: Presence.Abutment});
         taskHub().notify();
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function getVoteStatus(IERC721 _token)
-        public
-        view
-        returns (uint256 approvals, uint256 quorum)
-    {
-        Collection storage coll = collections[_token];
+    function getVoteStatus(IERC721 token) public view returns (uint256 approvals, uint256 quorum) {
+        Collection storage coll = collections[token];
         if (coll.quorum == 0) revert UnsupportedToken();
         return (coll.approvingVotes, coll.quorum);
     }
 
-    function getRemote(IERC721 _token) external view returns (address) {
-        Collection storage coll = collections[_token];
+    function getRemote(IERC721 token) external view returns (address) {
+        Collection storage coll = collections[token];
         if (coll.remote == address(0)) revert UnsupportedToken();
         return coll.remote;
     }
@@ -137,50 +133,50 @@ abstract contract Abutment is
     }
 
     /// @dev An abstraction over IERC721Enumerable and ERC721AQueryable that gets all items owned by the abutment for a particular collection. This should work for all Oasis collections that are very small and do not need pagination. This could cost a lot of gas, so it should not be called in a tx.
-    function getAbutmentTokens(IERC721 _token) external view virtual returns (uint256[] memory);
+    function getAbutmentTokens(IERC721 token) external view virtual returns (uint256[] memory);
 
-    function getTokenStatuses(IERC721 _token, uint256[] calldata _ids)
+    function getTokenStatuses(IERC721 token, uint256[] calldata ids)
         external
         view
         returns (Token[] memory)
     {
-        Token[] memory ts = new Token[](_ids.length);
-        for (uint256 i; i < _ids.length; ++i) {
-            ts[i] = tokens[_token][_ids[i]];
+        Token[] memory ts = new Token[](ids.length);
+        for (uint256 i; i < ids.length; ++i) {
+            ts[i] = tokens[token][ids[i]];
         }
         return ts;
     }
 
-    function _addCollection(IERC721 _token, address _remoteToken, uint256 _totalSupply) internal {
-        Collection storage coll = collections[_token];
+    function _addCollection(IERC721 token, address remoteToken, uint256 totalSupply) internal {
+        Collection storage coll = collections[token];
         require(coll.quorum == 0, "already exists");
         require(
-            _remoteToken != address(0) && _totalSupply > 0 && _totalSupply < type(uint64).max,
+            remoteToken != address(0) && totalSupply > 0 && totalSupply < type(uint64).max,
             "invalid request"
         );
-        (coll.remote, coll.quorum) = (_remoteToken, uint64((_totalSupply >> 1) + 1));
+        (coll.remote, coll.quorum) = (remoteToken, uint64((totalSupply >> 1) + 1));
     }
 
-    function _addCollectionSupport(IERC721 _token) internal {
-        supportedCollections.add(address(_token));
+    function _addCollectionSupport(IERC721 token) internal {
+        supportedCollections.add(address(token));
     }
 
-    function _removeCollectionSupport(IERC721 _token) internal {
-        supportedCollections.remove(address(_token));
+    function _removeCollectionSupport(IERC721 token) internal {
+        supportedCollections.remove(address(token));
     }
 
-    function _onBallotApproved(IERC721 _token) internal virtual;
+    function _onBallotApproved(IERC721 token) internal virtual;
 
-    function _beforeReceiveToken(IERC721 _token, uint256 _id) internal view virtual {}
+    function _beforeReceiveToken(IERC721 token, uint256 id) internal view virtual {}
 
     function _afterTaskResultsAccepted(
-        uint256[] calldata _taskIds,
-        bytes calldata _report,
+        uint256[] calldata taskIds,
+        bytes calldata report,
         address,
-        TaskIdSelector memory _sel
+        TaskIdSelector memory sel
     ) internal override {
-        uint256[] memory acceptedIxs = _sel.indices(_taskIds);
-        BridgeAction[] memory actions = abi.decode(_report, (BridgeAction[]));
+        uint256[] memory acceptedIxs = sel.indices(taskIds);
+        BridgeAction[] memory actions = abi.decode(report, (BridgeAction[]));
         for (uint256 i; i < acceptedIxs.length; ++i) {
             BridgeAction memory action = actions[acceptedIxs[i]];
             Token storage token = tokens[action.token][action.tokenId];

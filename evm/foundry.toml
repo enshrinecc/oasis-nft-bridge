@@ -1,4 +1,5 @@
 [profile.default]
+optimizer = false
 solc_version = "0.8.19"
 
 remappings = [

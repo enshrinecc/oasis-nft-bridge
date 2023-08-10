@@ -15,54 +15,58 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
     event TokenApproved(IERC721 indexed token);
 
     /// The length of time in seconds that a supported token will remain able to be bridged by sending it to this bridge endpoint. Tokens can still be sent to this endpoint and retrieved.
-    uint64 public immutable tokenSupportDuration;
+    uint256 internal immutable tokenSupportDuration_;
 
     mapping(IERC721 => uint256) public deactivationTimes;
 
-    constructor(AbutmentConfig memory _endpointConfig, uint64 _tokenSupportDuration)
-        Abutment(_endpointConfig)
+    constructor(AbutmentConfig memory abutmentConfig, uint64 tokenSupportDuration)
+        Abutment(abutmentConfig)
     {
-        tokenSupportDuration = _tokenSupportDuration;
+        tokenSupportDuration_ = tokenSupportDuration;
     }
 
-    function getAbutmentTokens(IERC721 _token) external view override returns (uint256[] memory) {
+    function getTokenSupportDuration() external view returns (uint256) {
+        return tokenSupportDuration_;
+    }
+
+    function getAbutmentTokens(IERC721 token) external view override returns (uint256[] memory) {
         // All Emerald-side tokens were verified to support IERC721Enumerable before adding.
-        IERC721Enumerable token = IERC721Enumerable(address(_token));
+        IERC721Enumerable enumerableToken = IERC721Enumerable(address(token));
         uint256[] memory tokens = new uint256[](token.balanceOf(address(this)));
         for (uint256 i; i < tokens.length; ++i) {
-            tokens[i] = token.tokenOfOwnerByIndex(address(this), i);
+            tokens[i] = enumerableToken.tokenOfOwnerByIndex(address(this), i);
         }
         return tokens;
     }
 
-    function proposeToken(address _token, address _remote) external onlyOwner {
-        if (!ERC165Checker.supportsInterface(_token, type(IERC721Enumerable).interfaceId)) {
+    function proposeToken(address tokenAddr, address remoteAddr) external onlyOwner {
+        if (!ERC165Checker.supportsInterface(tokenAddr, type(IERC721Enumerable).interfaceId)) {
             revert UnsupportedToken();
         }
-        IERC721 token = IERC721(_token);
-        _addCollection(token, _remote, IERC721Enumerable(_token).totalSupply());
+        IERC721Enumerable token = IERC721Enumerable(tokenAddr);
+        _addCollection(token, remoteAddr, token.totalSupply());
         emit TokenProposed(token);
     }
 
-    function deactivateToken(IERC721 _token) external {
-        if (deactivationTimes[_token] > block.timestamp) revert TooSoon();
-        _removeCollectionSupport(_token);
+    function deactivateToken(IERC721 token) external {
+        if (deactivationTimes[token] > block.timestamp) revert TooSoon();
+        _removeCollectionSupport(token);
     }
 
-    function _onBallotApproved(IERC721 _token) internal override {
-        deactivationTimes[_token] = uint64(block.timestamp + tokenSupportDuration);
-        _addCollectionSupport(_token);
-        emit TokenApproved(_token);
+    function _onBallotApproved(IERC721 token) internal override {
+        deactivationTimes[token] = uint64(block.timestamp + tokenSupportDuration_);
+        _addCollectionSupport(token);
+        emit TokenApproved(token);
     }
 
     /// @dev Tokens cannot be bridged back to the Emerald abutment unless it was previously bridged from the portal by the same holder. This function reverts if an offending task result is found. The Saphire abutment must not accept such tokens, but we check again here for additional safety.
     function _beforeTaskResultsAccepted(
         uint256[] calldata,
         bytes calldata,
-        bytes calldata _report,
+        bytes calldata report,
         address
     ) internal view override {
-        BridgeAction[] memory actions = abi.decode(_report, (BridgeAction[]));
+        BridgeAction[] memory actions = abi.decode(report, (BridgeAction[]));
         for (uint256 i; i < actions.length; ++i) {
             BridgeAction memory action = actions[i];
             if (tokens[action.token][action.tokenId].presence == Presence.Unknown) {
