@@ -108,7 +108,7 @@ abstract contract Abutment is
         IERC721 token = IERC721(msg.sender);
         _beforeReceiveToken(token, tokenId);
         tokens[token][tokenId] = Token({owner: from, presence: Presence.Abutment});
-        taskHub().notify();
+        getTaskHub().notify();
         return IERC721Receiver.onERC721Received.selector;
     }
 
