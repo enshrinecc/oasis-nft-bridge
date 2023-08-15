@@ -75,10 +75,7 @@ abstract contract Abutment is
     constructor(AbutmentConfig memory c)
         DelegatedTaskAcceptorV1()
         SimpleTimelockedTaskAcceptorV1Proxy(c.initialTaskAcceptor, c.taskAcceptorUpdateDelay)
-        TaskHubV1Notifier()
-    {
-        return;
-    }
+    {}
 
     /// Votes to take action on the token with the weight of the provided token IDs.
     function vote(IERC721 token, uint256[] calldata tokenIds) external {

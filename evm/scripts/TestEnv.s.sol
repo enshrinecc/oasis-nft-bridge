@@ -3,9 +3,9 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Script.sol";
 
+import {IdentityId, OmniKeyStore} from "escrin/identity/v1/OmniKeyStore.sol";
+import {Permitter} from "escrin/identity/v1/permitters/Permitter.sol";
 import {TaskAcceptorV1} from "escrin/tasks/acceptor/TaskAcceptor.sol";
-import {AttestationToken} from "escrin/identity/AttestationToken.sol";
-import {Lockbox} from "escrin/identity/Lockbox.sol";
 import {TaskIdSelectorOps} from "escrin/tasks/acceptor/ITaskAcceptor.sol";
 import {
     ERC721,
@@ -15,6 +15,26 @@ import {
 import {Abutment} from "../src/Abutment.sol";
 import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
 import {SapphireAbutment} from "../src/SapphireAbutment.sol";
+
+contract MockPermitter is Permitter {
+    function _grantPermit(IdentityId, address, bytes calldata, bytes calldata)
+        internal
+        pure
+        override
+        returns (bool allow, uint64 expiry)
+    {
+        return (true, 0);
+    }
+
+    function _revokePermit(IdentityId, address, bytes calldata, bytes calldata)
+        internal
+        pure
+        override
+        returns (bool allow)
+    {
+        return true;
+    }
+}
 
 contract MockTaskAcceptor is TaskAcceptorV1 {
     function _acceptTaskResults(uint256[] calldata, bytes calldata, bytes calldata, address)
@@ -41,14 +61,15 @@ contract MockERC721 is ERC721Enumerable {
 
 contract Setup is Script {
     function run() external {
-        uint256 chain = block.chainid;
-        require(chain == 31337, "not local network");
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
-        vm.startBroadcast();
+        OmniKeyStore keyStore = new OmniKeyStore();
 
         TaskAcceptorV1 taskAcceptor = new MockTaskAcceptor();
-        AttestationToken attok = new AttestationToken(msg.sender);
-        new Lockbox(attok);
+        Permitter permitter = new MockPermitter();
+
+        IdentityId identityId = keyStore.createIdentity(address(permitter), "testing");
+        console.log(IdentityId.unwrap(identityId));
 
         Abutment.AbutmentConfig memory abutmentConfig = Abutment.AbutmentConfig({
             taskAcceptorUpdateDelay: 7 days,
