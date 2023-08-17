@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #d0cfd2;
+  background: url('/background-tile.png');
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.hero-image {
+  height: 100vh;
+  width: 100%;
+  background-image: url('/rose-portal.png');
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+}
+
+.hero-text {
+  text-shadow: 0 0 1.5px white;
+}
+
+.logo-clip {
+  clip-path: inset(0px 0px 8px 0px); /* Adjust the values as needed */
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1 0 auto;
+  text-align: center;
+}
+
+.app::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.08);
+  z-index: -1;
+}
+
+.app-content {
+  flex: 1 0 auto;
+  @apply pt-8 text-white;
+}
+
+.app-footer {
+  flex-shrink: 0;
+}
+
+.app button {
+  @apply py-1 px-2 bg-sapphire rounded-md my-2 mx-1 text-night border-4 border-night ring ring-sapphire font-medium;
+}
+
+.app button:disabled {
+  @apply bg-rose-500 ring-rose-500;
+}
+
+.app button.destructive {
+  @apply bg-gray-400 ring-0 border-black font-normal;
+}
+
+.app button.action {
+  @apply bg-green-500 ring-green-500 text-night;
+}
+
+.app-card {
+  @apply bg-night w-5/6 max-w-xl mx-auto rounded-lg py-6 my-4 px-2;
+}
+
+.app-card h1 {
+  @apply font-medium text-2xl mb-4;
+}
+
+footer {
+  flex-shrink: 0;
+}
