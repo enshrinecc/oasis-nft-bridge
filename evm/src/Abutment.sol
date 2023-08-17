@@ -137,19 +137,63 @@ abstract contract Abutment is
         return nfts;
     }
 
-    function getAbutmentTokens(IERC721 token) external view returns (uint256[] memory) {
-        return _enumerateTokensOf(address(this), token);
-    }
-
-    function getVotingPower(address voter, IERC721 token) external view returns (uint256 power) {
+    function getVotingTokens(address voter, IERC721 token)
+        external
+        view
+        returns (uint256[] memory votingTokens)
+    {
         Collection storage coll = collections[token];
         if (coll.quorum == 0) revert UnsupportedToken();
         uint256[] memory heldTokens = _enumerateTokensOf(voter, token);
+        votingTokens = new uint256[](heldTokens.length);
+        uint256 numVotingTokens;
         for (uint256 i; i < heldTokens.length; ++i) {
             uint256 id = heldTokens[i];
             if (token.ownerOf(id) != voter || coll.voted[id]) continue;
-            power++;
+            votingTokens[numVotingTokens++] = id;
         }
+        assembly {
+            mstore(votingTokens, numVotingTokens)
+        }
+    }
+
+    function getHeldTokens(address holder, IERC721 token)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        if (!supportedCollections.contains(address(token))) return new uint256[](0);
+        return _enumerateTokensOf(holder, token);
+    }
+
+    struct HeldToken {
+        uint256 id;
+        Presence presence;
+    }
+
+    function getTokensByHolder(address holder, IERC721 token)
+        external
+        view
+        returns (HeldToken[] memory)
+    {
+        uint256[] memory abutmentTokens = _enumerateTokensOf(address(this), token);
+        uint256[] memory holderTokens = _enumerateTokensOf(holder, token);
+        HeldToken[] memory heldTokens = new HeldToken[](abutmentTokens.length + holderTokens.length);
+        uint256 writeIndex;
+        for (uint256 i; i < abutmentTokens.length; i++) {
+            uint256 id = abutmentTokens[i];
+            Token storage tok = tokens[token][id];
+            if (tok.owner != holder) continue;
+            heldTokens[writeIndex++] = HeldToken({id: id, presence: tok.presence});
+        }
+        for (uint256 i; i < holderTokens.length; i++) {
+            uint256 id = holderTokens[i];
+            heldTokens[writeIndex++] = HeldToken({id: id, presence: tokens[token][id].presence});
+        }
+        assembly {
+            mstore(heldTokens, writeIndex)
+        }
+        return heldTokens;
     }
 
     function getTokenStatuses(IERC721 token, uint256[] calldata ids)

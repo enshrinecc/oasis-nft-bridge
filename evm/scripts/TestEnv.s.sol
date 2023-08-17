@@ -57,6 +57,10 @@ contract MockERC721 is ERC721Enumerable {
             _mint(to, ++nextTokenId);
         }
     }
+
+    function _baseURI() internal pure override returns (string memory) {
+        return "https://airose.mypinata.cloud/ipfs/QmaWPWcxiETd9BwemjYkr6gQAakx5NuJtzS1qDKqY6PWos/";
+    }
 }
 
 contract Setup is Script {
