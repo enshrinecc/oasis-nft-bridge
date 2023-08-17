@@ -5,15 +5,23 @@ import {TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
 import {DelegatedTaskAcceptorV1} from "escrin/tasks/acceptor/DelegatedTaskAcceptor.sol";
 import {SimpleTimelockedTaskAcceptorV1Proxy} from "escrin/tasks/widgets/TaskAcceptorProxy.sol";
 import {TaskHubV1Notifier} from "escrin/tasks/widgets/TaskHubNotifier.sol";
+import {Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {
+    IERC721,
+    IERC721Enumerable
+} from "openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {EnumerableSet} from "openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {IERC721AQueryable} from "ERC721A/extensions/IERC721AQueryable.sol";
 
 abstract contract Abutment is
     IERC721Receiver,
     DelegatedTaskAcceptorV1,
     SimpleTimelockedTaskAcceptorV1Proxy,
-    TaskHubV1Notifier
+    TaskHubV1Notifier,
+    Ownable2Step
 {
     using EnumerableSet for EnumerableSet.AddressSet;
     using TaskIdSelectorOps for TaskIdSelector;
@@ -129,8 +137,20 @@ abstract contract Abutment is
         return nfts;
     }
 
-    /// @dev An abstraction over IERC721Enumerable and ERC721AQueryable that gets all items owned by the abutment for a particular collection. This should work for all Oasis collections that are very small and do not need pagination. This could cost a lot of gas, so it should not be called in a tx.
-    function getAbutmentTokens(IERC721 token) external view virtual returns (uint256[] memory);
+    function getAbutmentTokens(IERC721 token) external view returns (uint256[] memory) {
+        return _enumerateTokensOf(address(this), token);
+    }
+
+    function getVotingPower(address voter, IERC721 token) external view returns (uint256 power) {
+        Collection storage coll = collections[token];
+        if (coll.quorum == 0) revert UnsupportedToken();
+        uint256[] memory heldTokens = _enumerateTokensOf(voter, token);
+        for (uint256 i; i < heldTokens.length; ++i) {
+            uint256 id = heldTokens[i];
+            if (token.ownerOf(id) != voter || coll.voted[id]) continue;
+            power++;
+        }
+    }
 
     function getTokenStatuses(IERC721 token, uint256[] calldata ids)
         external
@@ -160,6 +180,23 @@ abstract contract Abutment is
 
     function _removeCollectionSupport(IERC721 token) internal {
         supportedCollections.remove(address(token));
+    }
+
+    /// @dev An abstraction over IERC721Enumerable and ERC721AQueryable that gets all items owned by the abutment for a particular collection. This should work for all Oasis collections that are very small and do not need pagination. This could cost a lot of gas, so it should not be called in a tx.
+    function _enumerateTokensOf(address holder, IERC721 token)
+        internal
+        view
+        returns (uint256[] memory)
+    {
+        if (ERC165Checker.supportsInterface(address(token), type(IERC721Enumerable).interfaceId)) {
+            IERC721Enumerable enumerableToken = IERC721Enumerable(address(token));
+            uint256[] memory heldTokens = new uint256[](token.balanceOf(holder));
+            for (uint256 i; i < heldTokens.length; ++i) {
+                heldTokens[i] = enumerableToken.tokenOfOwnerByIndex(holder, i);
+            }
+            return heldTokens;
+        }
+        return IERC721AQueryable(address(token)).tokensOfOwner(holder);
     }
 
     function _onBallotApproved(IERC721 token) internal virtual;

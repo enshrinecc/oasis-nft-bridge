@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {
     IERC721,
     IERC721Enumerable
@@ -10,7 +9,7 @@ import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Ch
 
 import {Abutment} from "./Abutment.sol";
 
-contract EmeraldAbutment is Abutment, Ownable2Step {
+contract EmeraldAbutment is Abutment {
     event TokenProposed(IERC721 indexed token);
     event TokenApproved(IERC721 indexed token);
 
@@ -27,16 +26,6 @@ contract EmeraldAbutment is Abutment, Ownable2Step {
 
     function getTokenSupportDuration() external view returns (uint256) {
         return tokenSupportDuration_;
-    }
-
-    function getAbutmentTokens(IERC721 token) external view override returns (uint256[] memory) {
-        // All Emerald-side tokens were verified to support IERC721Enumerable before adding.
-        IERC721Enumerable enumerableToken = IERC721Enumerable(address(token));
-        uint256[] memory tokens = new uint256[](token.balanceOf(address(this)));
-        for (uint256 i; i < tokens.length; ++i) {
-            tokens[i] = enumerableToken.tokenOfOwnerByIndex(address(this), i);
-        }
-        return tokens;
     }
 
     function proposeToken(address tokenAddr, address remoteAddr) external onlyOwner {

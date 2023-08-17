@@ -1,34 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {
     IERC721,
     IERC721Enumerable
 } from "openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import {IERC721A, IERC721AQueryable} from "ERC721A/extensions/IERC721AQueryable.sol";
 
 import {Abutment} from "./Abutment.sol";
 
-contract SapphireAbutment is Abutment, Ownable2Step {
+contract SapphireAbutment is Abutment {
     event TokenSupported(IERC721 indexed token);
     event TokenFrozen(IERC721 indexed token);
 
     constructor(AbutmentConfig memory abutmentConfig) Abutment(abutmentConfig) {}
-
-    /// A convenience method that abstracts over IERC721Enumerable and ERC721AQueryable.
-    function getAbutmentTokens(IERC721 token) external view override returns (uint256[] memory) {
-        if (ERC165Checker.supportsInterface(address(token), type(IERC721Enumerable).interfaceId)) {
-            IERC721Enumerable enumerableToken = IERC721Enumerable(address(token));
-            uint256[] memory tokens = new uint256[](token.balanceOf(address(this)));
-            for (uint256 i; i < tokens.length; ++i) {
-                tokens[i] = enumerableToken.tokenOfOwnerByIndex(address(this), i);
-            }
-            return tokens;
-        }
-        return IERC721AQueryable(address(token)).tokensOfOwner(address(this));
-    }
 
     // The caller must manually verify the details of the added contract.
     function supportToken(address tokenAddr, address remoteAddr) external onlyOwner {

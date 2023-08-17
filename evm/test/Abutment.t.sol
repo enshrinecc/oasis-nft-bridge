@@ -42,15 +42,6 @@ contract MockAbutment is Abutment {
         else _removeCollectionSupport(_token);
     }
 
-    function getAbutmentTokens(IERC721 _token) external view override returns (uint256[] memory) {
-        if (!support[_token]) return new uint256[](0);
-        uint256[] memory tokens = new uint256[](3);
-        tokens[0] = 1;
-        tokens[1] = 2;
-        tokens[2] = 3;
-        return tokens;
-    }
-
     function _onBallotApproved(IERC721 _token) internal override {
         _addCollectionSupport(_token);
     }
