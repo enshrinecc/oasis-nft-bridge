@@ -51,7 +51,7 @@ export function App() {
         <div className="py-4">
           <img
             width="70px"
-            src="https://enshrine.ai/favicon.svg"
+            src="/logo.svg"
             className="mx-auto -mb-2 bg-night/[.9] rounded-t-xl p-3 logo-clip"
           />
           <div className="text-center bg-night/[.9] inline-block rounded-xl py-2 px-4">
@@ -167,7 +167,7 @@ export function App() {
       </main>
       <footer className="py-8 bg-night text-center">
         <a href="https://enshrine.ai">
-          <img width="50px" src="https://enshrine.ai/favicon.svg" className="mx-auto" />
+          <img width="50px" src="/logo.svg" className="mx-auto" />
           <span className="text-gray-200 text-lg">Enshrine Computing</span>
         </a>
       </footer>

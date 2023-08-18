@@ -25,7 +25,7 @@ body {
 .hero-image {
   height: 100vh;
   width: 100%;
-  background-image: url('/rose-portal.png');
+  background-image: url('/rose-portal.webp');
   background-size: cover;
   background-position: center bottom;
   background-repeat: no-repeat;
