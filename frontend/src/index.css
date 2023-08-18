@@ -84,8 +84,12 @@ body {
   @apply bg-green-500 ring-green-500 text-night;
 }
 
+.app button.pending {
+  @apply ring-rose-500;
+}
+
 .app-card {
-  @apply bg-night w-5/6 max-w-xl mx-auto rounded-lg py-6 my-4 px-2;
+  @apply bg-night w-5/6 max-w-2xl mx-auto rounded-lg py-6 my-4 px-3;
 }
 
 .app-card h1 {

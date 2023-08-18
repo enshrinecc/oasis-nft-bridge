@@ -1,21 +1,20 @@
-import { useMemo, useState } from 'react';
-import { useAccount, useContractRead, useNetwork } from 'wagmi';
+import { useEffect, useMemo, useState } from 'react';
+import { useAccount, useNetwork } from 'wagmi';
 import Loader from 'react-spinners/GridLoader';
 
+import { Bridger } from './components/Bridger';
+import { CollectionChooser } from './components/CollectionChooser';
 import { Connect } from './components/Connect';
 import { Connected } from './components/Connected';
 import { NetworkSwitcher } from './components/NetworkSwitcher';
-import { CollectionChooser } from './components/CollectionChooser';
+import { Voter } from './components/Voter';
 
-import { Abutment as AbutmentABI } from './abi.js';
 import {
-  SupportedChain,
   SupportedCollection,
   chainIsSupported,
   collectionIsSupported,
-  getAbutment,
-  getCollectionAddr,
   getNetworkClassification,
+  useVoteStatus,
 } from './collections.js';
 import './index.css';
 
@@ -25,27 +24,11 @@ export function App() {
 
   const [collection, setCollection] = useState<SupportedCollection | undefined>();
 
-  const abutmentAddr = useMemo(() => (chain ? getAbutment(chain.id) : undefined), [chain]);
+  const collectionVoteStatus = useVoteStatus(chain?.id, collection);
 
-  const collectionVoteStatus = useContractRead({
-    address: abutmentAddr,
-    abi: AbutmentABI,
-    functionName: 'getVoteStatus',
-    args: [getCollectionAddr(collection!, chain?.id as SupportedChain)!],
-    enabled: chainIsSupported(chain?.id) && collectionIsSupported(collection, chain?.id!),
-    watch: true,
-  });
-
-  const votingPower = useContractRead({
-    address: abutmentAddr,
-    abi: AbutmentABI,
-    functionName: 'getVotingPower',
-    args: [address!, getCollectionAddr(collection!, chain?.id as SupportedChain)!],
-    enabled:
-      isConnected && chainIsSupported(chain?.id) && collectionIsSupported(collection, chain?.id!),
-    select: (p) => Number(p),
-    watch: true,
-  });
+  useEffect(() => {
+    if (!collectionIsSupported(collection, chain?.id)) setCollection(undefined)
+  }, [chain]);
 
   const collectionStatus = useMemo<'active' | 'inactive' | 'unknown'>(() => {
     if (
@@ -114,7 +97,7 @@ export function App() {
               <NetworkSwitcher />
             </div>
 
-            {!chain?.unsupported && (
+            {chainIsSupported(chain?.id) && (
               <div className="app-card">
                 <h1>3. Choose a collection</h1>
                 <CollectionChooser collection={collection} setCollection={setCollection} />
@@ -126,26 +109,12 @@ export function App() {
                 {collectionStatus === 'active' ? (
                   <>
                     <h1>4. Bridge your tokens</h1>
+                    <Bridger collection={collection} />
                   </>
                 ) : collectionStatus === 'inactive' ? (
                   <>
                     <h1>4. Vote to approve the bridge</h1>
-                    <p>Bridging must be approved by a majority vote.</p>
-                    <p>1 token = 1 vote</p>
-                    <h2 className="text-xl mt-3">Vote Status</h2>
-                    <p className="text-2xl whitespace-nowrap mt-1 mb-3">
-                      <span className="text-sapphire">
-                        {collectionVoteStatus.data?.[0]?.toString() ?? 'unknown'}
-                      </span>
-                      &nbsp;<span>/</span>&nbsp;
-                      <span>{collectionVoteStatus.data?.[1]?.toString() ?? 'unknown'}</span>
-                    </p>
-                    {(votingPower.data ?? 0) > 0 && (
-                      <button className="action">
-                        Cast&nbsp;{votingPower.data}&nbsp;
-                        {`vote${votingPower.data! > 1 ? 's' : ''}`}
-                      </button>
-                    )}
+                    <Voter collection={collection} />
                   </>
                 ) : (
                   <>

@@ -1,4 +1,7 @@
-import { Address } from 'viem';
+import { useEffect, useMemo, useState } from 'react';
+import { Address, useContractRead, useNetwork } from 'wagmi';
+
+import { Abutment as AbutmentABI } from './abi.js';
 
 const abutments: Partial<Record<SupportedChain, Address>> = {
   1337: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
@@ -36,11 +39,11 @@ export function getCollections(chainId: number): Record<SupportedChain, { name: 
   ) as Record<SupportedChain, Collection>;
 }
 
-export function getAbutment(chainId: number): Address | undefined {
+export function getAbutment(chainId: number | undefined): Address | undefined {
   return chainIsSupported(chainId) ? abutments[chainId] : undefined;
 }
 
-export function getCollectionAddr(id: string, chainId: number): Address | undefined {
+export function getCollectionAddr(id: string, chainId: number | undefined): Address | undefined {
   return chainIsSupported(chainId) && collectionIsSupported(id, chainId)
     ? collections[id].chains[chainId]
     : undefined;
@@ -48,9 +51,10 @@ export function getCollectionAddr(id: string, chainId: number): Address | undefi
 
 export function collectionIsSupported(
   id: string | undefined,
-  chainId: SupportedChain,
+  chainId: number | undefined,
 ): id is SupportedCollection {
   return (
+    chainIsSupported(chainId) &&
     id !== undefined &&
     id in collections &&
     chainId in collections[id as SupportedCollection].chains
@@ -63,12 +67,26 @@ export function chainIsSupported(chainId: number | undefined): chainId is Suppor
     chainId === 0xa515 ||
     chainId === 0x5afe ||
     chainId === 0xa516 ||
-    chainId === 1337 ||
-    chainId === 31337
+    (import.meta.env.MODE === 'development' && (chainId === 1337 || chainId === 31337))
   );
 }
 
 export function getNetworkClassification(chainId: SupportedChain): 'emerald' | 'sapphire' {
   if (chainId === 0x5aff || chainId === 0x5afe || chainId === 31337) return 'sapphire';
   return 'emerald';
+}
+
+export function useVoteStatus(
+  chainId: number | undefined,
+  collection: SupportedCollection | undefined,
+) {
+  return useContractRead({
+    address: getAbutment(chainId),
+    abi: AbutmentABI,
+    functionName: 'getVoteStatus',
+    args: [getCollectionAddr(collection!, chainId)!],
+    enabled: chainIsSupported(chainId) && collectionIsSupported(collection, chainId),
+    cacheOnBlock: true,
+    watch: true,
+  });
 }

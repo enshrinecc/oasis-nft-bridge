@@ -1,18 +1,10 @@
 import { Chain, useNetwork, useSwitchNetwork } from 'wagmi';
 
 export function NetworkSwitcher() {
-  const { chain } = useNetwork();
-  const { chains, error, isLoading, pendingChainId, switchNetwork } = useSwitchNetwork();
+  const { chains, error, switchNetwork } = useSwitchNetwork();
 
   const isMainnet = (ch: Chain) => ch.id === 0x5afe || ch.id == 0xa516;
   const isTestnet = (ch: Chain) => !isMainnet(ch);
-
-  const renderChain = (ch: Chain) => (
-    <button disabled={ch.id === chain?.id} onClick={() => switchNetwork!(ch.id)} className="w-full">
-      {ch.name}
-      {isLoading && ch.id === pendingChainId && ' (switching)'}
-    </button>
-  );
 
   return (
     <div>
@@ -36,16 +28,15 @@ function NetworkButtons({ chains }: { chains: Chain[] }) {
   const { isLoading, pendingChainId, switchNetwork } = useSwitchNetwork();
 
   return (
-    <div className="flex flex-col items-center mx-auto" style={{ width: 'fit-content' }}>
+    <div className="flex flex-col items-center mx-auto w-fit">
       {chains.map((ch) => (
         <button
           key={ch.id}
           disabled={ch.id === chain?.id}
           onClick={() => switchNetwork!(ch.id)}
-          className="w-full"
+          className={`w-full ${isLoading && ch.id === pendingChainId ? '!ring-rose-500' : ''}`}
         >
           {ch.name}
-          {isLoading && ch.id === pendingChainId && ' (switching)'}
         </button>
       ))}
     </div>

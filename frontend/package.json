@@ -9,6 +9,7 @@
     "format": "prettier --write --cache '*.{json,ts,html}' 'src/**/*'"
   },
   "dependencies": {
+    "@wagmi/core": "^1.3.9",
     "buffer": "^6.0.3",
     "process": "^0.11.10",
     "react": "^18.2.0",
