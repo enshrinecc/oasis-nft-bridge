@@ -2,6 +2,7 @@ import { Chain, useNetwork, useSwitchNetwork } from 'wagmi';
 
 export function NetworkSwitcher() {
   const { chains, error, switchNetwork } = useSwitchNetwork();
+  const { chain } = useNetwork();
 
   const isMainnet = (ch: Chain) => ch.id === 0x5afe || ch.id == 0xa516;
   const isTestnet = (ch: Chain) => !isMainnet(ch);
@@ -11,7 +12,10 @@ export function NetworkSwitcher() {
       {switchNetwork && (
         <>
           <NetworkButtons chains={chains.filter(isMainnet)} />
-          <details className="mt-4" open={import.meta.env?.MODE === 'development'}>
+          <details
+            className="mt-4"
+            open={import.meta.env?.MODE === 'development' || (chain && isTestnet(chain))}
+          >
             <summary className="my-2 cursor-pointer text-gray-400">Test Networks</summary>
             <NetworkButtons chains={chains.filter(isTestnet)} />
           </details>
