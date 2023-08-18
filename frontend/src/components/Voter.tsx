@@ -16,8 +16,8 @@ import {
   collectionIsSupported,
   getAbutment,
   getCollectionAddr,
-  useVoteStatus,
 } from '../collections.js';
+import { useVoteStatus } from '../hooks/useVoteStatus.js';
 
 export function Voter({ collection }: { collection: SupportedCollection }) {
   const { address, isConnected } = useAccount();

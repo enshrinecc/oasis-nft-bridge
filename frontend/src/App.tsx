@@ -14,8 +14,8 @@ import {
   chainIsSupported,
   collectionIsSupported,
   getNetworkClassification,
-  useVoteStatus,
 } from './collections.js';
+import { useVoteStatus } from './hooks/useVoteStatus.js';
 import './index.css';
 
 export function App() {
@@ -27,7 +27,7 @@ export function App() {
   const collectionVoteStatus = useVoteStatus(chain?.id, collection);
 
   useEffect(() => {
-    if (!collectionIsSupported(collection, chain?.id)) setCollection(undefined)
+    if (!collectionIsSupported(collection, chain?.id)) setCollection(undefined);
   }, [chain]);
 
   const collectionStatus = useMemo<'active' | 'inactive' | 'unknown'>(() => {
@@ -110,6 +110,44 @@ export function App() {
                   <>
                     <h1>4. Bridge your tokens</h1>
                     <Bridger collection={collection} />
+                    <details className="mt-4">
+                      <summary className="my-2 cursor-pointer text-gray-400">Tips</summary>
+                      <ul className="text-left mx-auto max-w-prose list-disc px-4 text-gray-400">
+                        <li className="my-3">
+                          The Escrin Smart Worker that implements the bridge runs in a trusted
+                          execution environment (TEE), which provides integrity and confidentiality.
+                        </li>
+                        <li className="my-3">
+                          Bridging may take up to 30 minutes, but usually will taken about five.
+                        </li>
+                        <li className="my-3">
+                          Once bridging has completed, your token will disappear from the list
+                          above. Switch networks to see it again.
+                        </li>
+                        <li className="my-3">
+                          If you have questions or comments, please reach out on{' '}
+                          <a
+                            className="underline"
+                            href="https://enshrine.ai/discord"
+                            target="_blank"
+                          >
+                            Discord
+                          </a>
+                          .
+                        </li>
+                        <li className="my-3">
+                          The{' '}
+                          <a
+                            className="underline"
+                            href="https://github.com/enshrinecc/oasis-nft-bridge"
+                            target="_blank"
+                          >
+                            source code
+                          </a>{' '}
+                          for this app is freely available for reading and forking.
+                        </li>
+                      </ul>
+                    </details>
                   </>
                 ) : collectionStatus === 'inactive' ? (
                   <>

@@ -1,7 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Address, useContractRead, useNetwork } from 'wagmi';
-
-import { Abutment as AbutmentABI } from './abi.js';
+import { Address } from 'wagmi';
 
 const abutments: Partial<Record<SupportedChain, Address>> = {
   1337: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
@@ -11,10 +8,7 @@ const abutments: Partial<Record<SupportedChain, Address>> = {
 const collections: Record<SupportedCollection, Collection> = {
   'ai-rose': {
     name: 'AI Rose',
-    chains: {
-      // 0x5aff: '0x',
-      // 0xa515: '0x',
-    },
+    chains: {},
   },
   test: {
     name: 'Test Token',
@@ -74,19 +68,4 @@ export function chainIsSupported(chainId: number | undefined): chainId is Suppor
 export function getNetworkClassification(chainId: SupportedChain): 'emerald' | 'sapphire' {
   if (chainId === 0x5aff || chainId === 0x5afe || chainId === 31337) return 'sapphire';
   return 'emerald';
-}
-
-export function useVoteStatus(
-  chainId: number | undefined,
-  collection: SupportedCollection | undefined,
-) {
-  return useContractRead({
-    address: getAbutment(chainId),
-    abi: AbutmentABI,
-    functionName: 'getVoteStatus',
-    args: [getCollectionAddr(collection!, chainId)!],
-    enabled: chainIsSupported(chainId) && collectionIsSupported(collection, chainId),
-    cacheOnBlock: true,
-    watch: true,
-  });
 }

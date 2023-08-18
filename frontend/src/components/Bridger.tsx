@@ -49,7 +49,7 @@ export function Bridger({ collection }: { collection: SupportedCollection }) {
 
   const trackedTokens = useMemo(
     () => tokens?.filter(({ presence }) => presence !== 1 /* absent */) ?? [],
-    [tokens]
+    [tokens],
   );
 
   return (
