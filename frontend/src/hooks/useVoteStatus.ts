@@ -7,7 +7,7 @@ import {
   getAbutment,
   getCollectionAddr,
 } from '../collections.js';
-import { Abutment as AbutmentABI } from '../abi.js';
+import { Abutment as AbutmentABI } from '../abis.js';
 
 export function useVoteStatus(
   chainId: number | undefined,

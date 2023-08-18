@@ -1,4 +1,4 @@
-import { Abutment as AbutmentAbi } from './abi.js';
+import { Abutment as AbutmentAbi } from './abis.js';
 
 import { Address, Hash, PublicClient, WalletClient, encodeAbiParameters, parseGwei } from 'viem';
 

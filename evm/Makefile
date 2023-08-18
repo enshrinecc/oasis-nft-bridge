@@ -1,12 +1,15 @@
 SRC_DIR := src test scripts
 SOURCES := $(foreach dir,$(SRC_DIR),$(wildcard $(dir)/*.sol))
 
-.PHONY: all build test test-env
+.PHONY: all build generate test test-env
 
-all: build
+all: build generate
 
 build:
 	forge build
+
+generate: build
+	node export-abis.cjs
 
 test:
 	forge test

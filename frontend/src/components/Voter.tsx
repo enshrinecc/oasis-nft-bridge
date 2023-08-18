@@ -8,7 +8,7 @@ import {
   useWaitForTransaction,
 } from 'wagmi';
 
-import { Abutment as AbutmentABI } from '../abi.js';
+import { Abutment as AbutmentABI } from '../abis.js';
 import {
   SupportedChain,
   SupportedCollection,
