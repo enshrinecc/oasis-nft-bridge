@@ -176,7 +176,6 @@ abstract contract Abutment is
         view
         returns (uint256[] memory)
     {
-        if (!supportedCollections.contains(address(token))) return new uint256[](0);
         return _enumerateTokensOf(holder, token);
     }
 
@@ -192,7 +191,8 @@ abstract contract Abutment is
     {
         uint256[] memory abutmentTokens = _enumerateTokensOf(address(this), token);
         uint256[] memory holderTokens = _enumerateTokensOf(holder, token);
-        HeldToken[] memory heldTokens = new HeldToken[](abutmentTokens.length + holderTokens.length);
+        uint256 maxTokens = abutmentTokens.length + holderTokens.length;
+        HeldToken[] memory heldTokens = new HeldToken[](maxTokens);
         uint256 writeIndex;
         for (uint256 i; i < abutmentTokens.length; i++) {
             uint256 id = abutmentTokens[i];
