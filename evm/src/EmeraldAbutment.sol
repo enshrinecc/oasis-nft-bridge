@@ -49,12 +49,11 @@ contract EmeraldAbutment is Abutment {
     }
 
     /// @dev Tokens cannot be bridged back to the Emerald abutment unless it was previously bridged from the portal by the same holder. This function reverts if an offending task result is found. The Saphire abutment must not accept such tokens, but we check again here for additional safety.
-    function _beforeTaskResultsAccepted(
-        uint256[] calldata,
-        bytes calldata,
-        bytes calldata report,
-        address
-    ) internal view override {
+    function _beforeTaskResultsAccepted(uint256[] calldata, bytes calldata, bytes calldata report)
+        internal
+        view
+        override
+    {
         BridgeAction[] memory actions = abi.decode(report, (BridgeAction[]));
         for (uint256 i; i < actions.length; ++i) {
             BridgeAction memory action = actions[i];

@@ -3,7 +3,8 @@ pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ITaskAcceptorV1, TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
+import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IIdentityRegistry.sol";
+import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {IERC721, ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import {Abutment} from "../src/Abutment.sol";
@@ -31,7 +32,13 @@ contract MockAbutment is Abutment {
 
     constructor()
         Abutment(
-            Abutment.AbutmentConfig({taskAcceptorUpdateDelay: 7 days, initialTaskAcceptor: address(42)})
+            Abutment.AbutmentConfig({
+                trustedIdentityUpdateDelay: 7 days,
+                identity: Abutment.TrustedIdentity({
+                    registry: IIdentityRegistry(address(42)),
+                    id: IdentityId.wrap(uint256(1234))
+                })
+            })
         )
     {
         return;
@@ -48,7 +55,7 @@ contract MockAbutment is Abutment {
 }
 
 contract AbutmentTest is Test {
-    using TaskIdSelectorOps for ITaskAcceptorV1.TaskIdSelector;
+    using TaskIdSelectorOps for ITaskAcceptor.TaskIdSelector;
 
     MockAbutment private ep;
     MockNFT private nft;
@@ -57,7 +64,7 @@ contract AbutmentTest is Test {
         ep = new MockAbutment();
         nft = new MockNFT();
         ep.setSupport(nft, true);
-        vm.mockCall(address(ep.getTaskAcceptor()), bytes(""), abi.encode(TaskIdSelectorOps.all()));
+        vm.mockCall(address(ep), bytes(""), abi.encode(TaskIdSelectorOps.all()));
     }
 
     function testSendUnsupportedToken() public {

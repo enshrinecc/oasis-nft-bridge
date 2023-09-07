@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ITaskAcceptorV1, TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
+import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IIdentityRegistry.sol";
+import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {
     ERC721,
     ERC721Enumerable
@@ -55,7 +56,7 @@ contract MockNFT is ERC721Enumerable {
 }
 
 contract EmeraldAbutmentTest is Test {
-    using TaskIdSelectorOps for ITaskAcceptorV1.TaskIdSelector;
+    using TaskIdSelectorOps for ITaskAcceptor.TaskIdSelector;
 
     address private constant NFT_OWNER_1 = address(2345);
     address private constant NFT_OWNER_10 = address(1234);
@@ -67,8 +68,11 @@ contract EmeraldAbutmentTest is Test {
     function setUp() public {
         p = new EmeraldAbutment(
             Abutment.AbutmentConfig({
-                taskAcceptorUpdateDelay: 7 days,
-                initialTaskAcceptor: address(42)
+                trustedIdentityUpdateDelay: 7 days,
+                identity: Abutment.TrustedIdentity({
+                    registry: IIdentityRegistry(address(42)),
+                    id: IdentityId.wrap(uint256(1234))
+                })
             }),
             12 weeks
         );

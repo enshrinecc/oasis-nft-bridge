@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {TaskIdSelectorOps} from "escrin/tasks/acceptor/TaskAcceptor.sol";
-import {DelegatedTaskAcceptorV1} from "escrin/tasks/acceptor/DelegatedTaskAcceptor.sol";
-import {SimpleTimelockedTaskAcceptorV1Proxy} from "escrin/tasks/widgets/TaskAcceptorProxy.sol";
-import {TaskHubV1Notifier} from "escrin/tasks/widgets/TaskHubNotifier.sol";
-import {Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
+import {
+    IdentityId,
+    IIdentityRegistry,
+    PermittedSubmitterTaskAcceptor
+} from "escrin/tasks/v1/acceptors/PermittedSubmitterTaskAcceptor.sol";
+import {TaskHubNotifier} from "escrin/tasks/v1/hub/TaskHubNotifier.sol";
+import {Ownable, Ownable2Step} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721Receiver} from "openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {
     IERC721,
@@ -18,9 +20,8 @@ import {IERC721AQueryable} from "ERC721A/extensions/IERC721AQueryable.sol";
 
 abstract contract Abutment is
     IERC721Receiver,
-    DelegatedTaskAcceptorV1,
-    SimpleTimelockedTaskAcceptorV1Proxy,
-    TaskHubV1Notifier,
+    PermittedSubmitterTaskAcceptor,
+    TaskHubNotifier,
     Ownable2Step
 {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -71,19 +72,32 @@ abstract contract Abutment is
         Release
     }
 
+    struct TrustedIdentity {
+        IIdentityRegistry registry;
+        IdentityId id;
+    }
+
+    struct AbutmentConfig {
+        uint256 trustedIdentityUpdateDelay;
+        TrustedIdentity identity;
+    }
+
+    event TrustedIdentityIncoming(TrustedIdentity identity);
+
+    uint256 public immutable trustedIdentityUpdateDelay;
+    TrustedIdentity public incomingTrustedIdentity;
+    uint256 public incomingTrustedIdentityActiveTime;
+
     mapping(IERC721 => Collection) internal collections;
     mapping(IERC721 => mapping(uint256 => Token)) internal tokens;
     EnumerableSet.AddressSet private supportedCollections;
 
-    struct AbutmentConfig {
-        uint64 taskAcceptorUpdateDelay;
-        address initialTaskAcceptor;
-    }
-
     constructor(AbutmentConfig memory c)
-        DelegatedTaskAcceptorV1()
-        SimpleTimelockedTaskAcceptorV1Proxy(c.initialTaskAcceptor, c.taskAcceptorUpdateDelay)
-    {}
+        Ownable(msg.sender)
+        PermittedSubmitterTaskAcceptor(address(c.identity.registry), c.identity.id)
+    {
+        trustedIdentityUpdateDelay = c.trustedIdentityUpdateDelay;
+    }
 
     /// Votes to take action on the token with the weight of the provided token IDs.
     function vote(IERC721 token, uint256[] calldata tokenIds) external {
@@ -107,13 +121,13 @@ abstract contract Abutment is
     function onERC721Received(address, address from, uint256 tokenId, bytes calldata)
         external
         override
+        notify
         returns (bytes4)
     {
         if (!supportedCollections.contains(msg.sender)) revert UnsupportedToken();
         IERC721 token = IERC721(msg.sender);
         _beforeReceiveToken(token, tokenId);
         tokens[token][tokenId] = Token({owner: from, presence: Presence.Abutment});
-        getTaskHub().notify();
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -208,6 +222,22 @@ abstract contract Abutment is
         return ts;
     }
 
+    function setTrustedIdentity(TrustedIdentity calldata identity) external onlyOwner {
+        if (
+            identity.registry == incomingTrustedIdentity.registry
+                && IdentityId.unwrap(identity.id) == IdentityId.unwrap(incomingTrustedIdentity.id)
+        ) {
+            if (incomingTrustedIdentityActiveTime > block.timestamp) revert TooSoon();
+            _setTrustedIdentity(address(identity.registry), identity.id);
+            delete incomingTrustedIdentity;
+            delete incomingTrustedIdentityActiveTime;
+            return;
+        }
+        incomingTrustedIdentity = identity;
+        incomingTrustedIdentityActiveTime = block.timestamp + trustedIdentityUpdateDelay;
+        emit TrustedIdentityIncoming(identity);
+    }
+
     function _addCollection(IERC721 token, address remoteToken, uint256 totalSupply) internal {
         Collection storage coll = collections[token];
         require(coll.quorum == 0, "already exists");
@@ -250,10 +280,9 @@ abstract contract Abutment is
     function _afterTaskResultsAccepted(
         uint256[] calldata taskIds,
         bytes calldata report,
-        address,
-        TaskIdSelector memory sel
+        TaskIdSelector memory selected
     ) internal override {
-        uint256[] memory acceptedIxs = sel.indices(taskIds);
+        uint256[] memory acceptedIxs = selected.indices(taskIds);
         BridgeAction[] memory actions = abi.decode(report, (BridgeAction[]));
         for (uint256 i; i < acceptedIxs.length; ++i) {
             BridgeAction memory action = actions[acceptedIxs[i]];

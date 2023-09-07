@@ -1,12 +1,12 @@
 [profile.default]
 optimizer = false
-solc_version = "0.8.19"
+solc_version = "0.8.21"
 
 remappings = [
   "@oasisprotocol/sapphire-contracts/contracts=lib/sapphire-paratime/contracts/contracts",
   "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts",
   "openzeppelin/contracts/=lib/openzeppelin-contracts/contracts",
-  "escrin/=lib/escrin/evm/contracts"
+  "escrin/=lib/escrin/evm/src"
 ]
 
 [rpc_endpoints]
