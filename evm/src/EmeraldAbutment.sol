@@ -57,7 +57,8 @@ contract EmeraldAbutment is Abutment {
         BridgeAction[] memory actions = abi.decode(report, (BridgeAction[]));
         for (uint256 i; i < actions.length; ++i) {
             BridgeAction memory action = actions[i];
-            if (tokens[action.token][action.tokenId].presence == Presence.Unknown) {
+            Token storage token = tokens[action.token][action.tokenId];
+            if (token.presence == Presence.Unknown || action.recipient != token.owner) {
                 revert UnsupportedToken();
             }
         }

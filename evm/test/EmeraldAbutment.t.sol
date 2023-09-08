@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 
 import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IIdentityRegistry.sol";
 import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
+import {Ownable} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {
     ERC721,
     ERC721Enumerable
@@ -12,6 +13,7 @@ import {
 
 import {Abutment} from "../src/Abutment.sol";
 import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
+import {MockIdentityRegistry, MockNFT, makeTaskIds} from "./Shared.sol";
 
 contract UnsupportedNonEnumerableNFT is ERC721 {
     constructor() ERC721("Unsupported", "BAD") {
@@ -37,24 +39,6 @@ contract UnsupportedUnreasonableNFT is ERC721Enumerable {
     }
 }
 
-contract MockNFT is ERC721Enumerable {
-    uint256 private nextTokenId;
-
-    constructor() ERC721("TestToken", "TEST") {
-        return;
-    }
-
-    function test() public pure {
-        return;
-    }
-
-    function mint(address to) external returns (uint256 id) {
-        nextTokenId++;
-        _mint(to, nextTokenId);
-        return nextTokenId;
-    }
-}
-
 contract EmeraldAbutmentTest is Test {
     using TaskIdSelectorOps for ITaskAcceptor.TaskIdSelector;
 
@@ -64,19 +48,28 @@ contract EmeraldAbutmentTest is Test {
 
     EmeraldAbutment private p;
     MockNFT private nft;
+    IIdentityRegistry private reg;
 
     function setUp() public {
+        reg = new MockIdentityRegistry();
+        IdentityId iid = IdentityId.wrap(1234);
         p = new EmeraldAbutment(
             Abutment.AbutmentConfig({
                 trustedIdentityUpdateDelay: 7 days,
                 identity: Abutment.TrustedIdentity({
-                    registry: IIdentityRegistry(address(42)),
-                    id: IdentityId.wrap(uint256(1234))
+                    registry: reg,
+                    id: iid
                 })
             }),
             12 weeks
         );
         nft = new MockNFT();
+
+        vm.mockCall(
+            address(reg),
+            abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),
+            abi.encode(IIdentityRegistry.Permit({expiry: type(uint64).max}))
+        );
 
         nft.mint(NFT_OWNER_1);
         for (uint256 i; i < 10; ++i) {
@@ -86,8 +79,10 @@ contract EmeraldAbutmentTest is Test {
 
     function testProposeToken() public {
         // Ensure that only the portal owner can propose tokens.
-        vm.prank(address(999));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(0));
+        vm.expectRevert(
+            abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0))
+        );
         p.proposeToken(address(nft), address(888));
 
         // Ensure that only ERC721Enumerable are acceptable.
@@ -112,41 +107,53 @@ contract EmeraldAbutmentTest is Test {
         p.proposeToken(address(nft), address(888));
     }
 
-    // function testBridgeComingFromWrongSender() public {
-    //     p.proposeToken(address(nft), address(888));
+    function testBridgeComingFromWrongSender() public {
+        p.proposeToken(address(nft), address(888));
 
-    //     vm.prank(NFT_OWNER_10);
-    //     p.vote(address(nft));
+        uint256[] memory votingTokens = p.getVotingTokens(NFT_OWNER_10, nft);
+        vm.prank(NFT_OWNER_10);
+        p.vote(nft, votingTokens);
 
-    //     vm.prank(NFT_OWNER_1);
-    //     nft.safeTransferFrom(NFT_OWNER_1, address(p), 1);
+        vm.prank(NFT_OWNER_1);
+        nft.safeTransferFrom(NFT_OWNER_1, address(p), 1);
 
-    //     // First send the token over the bridge by NFT_OWNER_1.
+        // First send the token over the bridge by NFT_OWNER_1.
 
-    //     Abutment.TokenDescriptor memory desc = Abutment.TokenDescriptor({
-    //         token: address(nft),
-    //         id: 1,
-    //         holder: NFT_OWNER_1
-    //     });
-    //     uint256[] memory taskIds = new uint256[](1);
-    //     Abutment.TokenDescriptor[] memory report = new Abutment.TokenDescriptor[](1);
-    //     taskIds[0] = p.getTaskId(desc);
-    //     report[0] = desc;
+        Abutment.BridgeAction[] memory report = new Abutment.BridgeAction[](1);
+        report[0] = Abutment.BridgeAction({
+            token: nft,
+            tokenId: 1,
+            effect: Abutment.ActionEffect.Lock,
+            recipient: NFT_OWNER_1
+        });
 
-    //     vm.mockCall(address(p.getTaskAcceptor()), bytes(""), abi.encode(TaskIdSelectorOps.all()));
-    //     p.acceptTaskResults(taskIds, "", abi.encode(report));
+        require(
+            p.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report)).quantifier
+                == ITaskAcceptor.Quantifier.All,
+            "task results not accepted"
+        );
 
-    //     // Now expect that the token cannot be bridged back by NFT_OWNER_10
+        // Now expect that the token cannot be bridged back by NFT_OWNER_10
 
-    //     Abutment.TokenDescriptor memory unknownDesc = Abutment.TokenDescriptor({
-    //         token: address(nft),
-    //         id: 1,
-    //         holder: NFT_OWNER_10
-    //     });
-    //     taskIds[0] = p.getTaskId(unknownDesc);
-    //     report[0] = unknownDesc;
-    //     vm.mockCall(address(p.getTaskAcceptor()), bytes(""), abi.encode(TaskIdSelectorOps.all()));
-    //     vm.expectRevert(Abutment.UnsupportedToken.selector);
-    //     p.acceptTaskResults(taskIds, "", abi.encode(report));
-    // }
+        report[0] = Abutment.BridgeAction({
+            token: nft,
+            tokenId: 1,
+            effect: Abutment.ActionEffect.Release,
+            recipient: NFT_OWNER_10
+        });
+
+        vm.expectRevert(Abutment.UnsupportedToken.selector);
+        p.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report));
+
+        // And it should go back to the original owner just fine.
+
+        report[0] = Abutment.BridgeAction({
+            token: nft,
+            tokenId: 1,
+            effect: Abutment.ActionEffect.Release,
+            recipient: NFT_OWNER_1
+        });
+
+        p.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report));
+    }
 }

@@ -4,39 +4,13 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 
 import {InterfaceUnsupported} from "escrin/Types.sol";
-import {
-    IdentityId,
-    IIdentityRegistry,
-    IdentityRegistry
-} from "escrin/identity/v1/IdentityRegistry.sol";
+import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IdentityRegistry.sol";
 import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC721, ERC721} from "openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ERC721Enumerable} from "openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {Abutment} from "../src/Abutment.sol";
-
-contract MockNFT is ERC721Enumerable {
-    uint256 private nextTokenId;
-
-    constructor() ERC721("TestToken", "TEST") {}
-
-    function test() public pure {}
-
-    function mint(address _to) external returns (uint256 id) {
-        nextTokenId++;
-        _mint(_to, nextTokenId);
-        return nextTokenId;
-    }
-}
-
-contract MockIdentityRegistry is IdentityRegistry {
-    function test() public pure {}
-
-    function _whenIdentityCreated(IdentityId id, bytes calldata pers) internal virtual override {}
-
-    function _whenIdentityDestroyed(IdentityId id) internal virtual override {}
-}
+import {MockIdentityRegistry, MockNFT, makeTaskIds} from "./Shared.sol";
 
 contract MockAbutment is Abutment {
     constructor(TrustedIdentity memory identity)
@@ -63,7 +37,7 @@ contract AbutmentTest is Test {
     MockAbutment private ep;
     MockNFT private nft;
     MockNFT private newNft;
-    IdentityRegistry private reg;
+    IIdentityRegistry private reg;
 
     function setUp() public {
         reg = new MockIdentityRegistry();
@@ -77,7 +51,7 @@ contract AbutmentTest is Test {
         ep.setSupport(nft, true);
         vm.mockCall(
             address(reg),
-            abi.encodeWithSelector(IdentityRegistry.readPermit.selector, address(this), iid),
+            abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),
             abi.encode(IIdentityRegistry.Permit({expiry: type(uint64).max}))
         );
     }
@@ -222,12 +196,12 @@ contract AbutmentTest is Test {
 
         vm.prank(address(0));
         require(
-            ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report)).quantifier
+            ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report)).quantifier
                 == ITaskAcceptor.Quantifier.None,
             "task results wrongly accepted"
         );
         require(
-            ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report)).quantifier
+            ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report)).quantifier
                 == ITaskAcceptor.Quantifier.All,
             "task results not accepted"
         );
@@ -252,12 +226,12 @@ contract AbutmentTest is Test {
 
         vm.prank(address(0));
         require(
-            ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report)).quantifier
+            ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report)).quantifier
                 == ITaskAcceptor.Quantifier.None,
             "task results wrongly accepted"
         );
         require(
-            ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report)).quantifier
+            ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report)).quantifier
                 == ITaskAcceptor.Quantifier.All,
             "task results not accepted"
         );
@@ -268,7 +242,7 @@ contract AbutmentTest is Test {
         // And now we bridge back.
 
         // But first the token needs to be held by the endpoint. We expect idempotence in any case.
-        ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report));
+        ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report));
         require(_getPresence(nft, myTokenId) == Abutment.Presence.Wallet, "presence not wallet");
 
         nft.safeTransferFrom(address(this), address(ep), myTokenId);
@@ -279,7 +253,7 @@ contract AbutmentTest is Test {
             effect: Abutment.ActionEffect.Lock,
             recipient: address(0)
         });
-        ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report));
+        ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report));
         require(_getPresence(nft, myTokenId) == Abutment.Presence.Absent, "presence not absent");
     }
 
@@ -305,7 +279,7 @@ contract AbutmentTest is Test {
 
         nft.safeTransferFrom(address(this), address(ep), tokenIdGoing);
 
-        ep.acceptTaskResults(_makeTaskIds(report.length), "", abi.encode(report));
+        ep.acceptTaskResults(makeTaskIds(report.length), "", abi.encode(report));
 
         require(_getPresence(nft, tokenIdComing) == Abutment.Presence.Wallet, "presence not wallet");
         assertEq(nft.ownerOf(tokenIdComing), address(this));
@@ -318,13 +292,5 @@ contract AbutmentTest is Test {
         tokenIds[0] = id;
         Abutment.Token[] memory tokens = ep.getTokenStatuses(token, tokenIds);
         return tokens[0].presence;
-    }
-
-    function _makeTaskIds(uint256 count) internal pure returns (uint256[] memory) {
-        uint256[] memory ids = new uint256[](count);
-        for (uint256 i; i < count; ++i) {
-            ids[i] = i;
-        }
-        return ids;
     }
 }
