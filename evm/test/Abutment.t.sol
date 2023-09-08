@@ -21,9 +21,8 @@ contract MockAbutment is Abutment {
         _addCollection(token, remote, supply);
     }
 
-    function setSupport(IERC721 token, bool support) external {
-        if (support) _addCollectionSupport(token);
-        else _removeCollectionSupport(token);
+    function addSupport(IERC721 token) external {
+        _addCollectionSupport(token);
     }
 
     function _onBallotApproved(IERC721 token) internal override {
@@ -48,7 +47,7 @@ contract AbutmentTest is Test {
         }));
         newNft = new MockNFT();
         nft = new MockNFT();
-        ep.setSupport(nft, true);
+        ep.addSupport(nft);
         vm.mockCall(
             address(reg),
             abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),

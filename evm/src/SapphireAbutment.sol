@@ -49,6 +49,7 @@ contract SapphireAbutment is Abutment {
     }
 
     function _beforeReceiveToken(IERC721 token, uint256 id) internal view override {
+        // This abutment can only receive tokens that it has already dispensed.
         if (tokens[IERC721(token)][id].presence == Presence.Unknown) revert UnsupportedToken();
     }
 }

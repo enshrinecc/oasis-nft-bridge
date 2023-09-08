@@ -12,9 +12,9 @@ contract MockNFT is ERC721Enumerable {
 
     function test() public pure {}
 
-    function mint(address _to) external returns (uint256 id) {
+    function mint(address to) external returns (uint256 id) {
         nextTokenId++;
-        _mint(_to, nextTokenId);
+        _mint(to, nextTokenId);
         return nextTokenId;
     }
 }
