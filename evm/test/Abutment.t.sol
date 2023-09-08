@@ -4,17 +4,23 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 
 import {InterfaceUnsupported} from "escrin/Types.sol";
-import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IdentityRegistry.sol";
+import {
+    IdentityId,
+    IIdentityRegistry,
+    IdentityRegistry
+} from "escrin/identity/v1/IdentityRegistry.sol";
 import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {Abutment} from "../src/Abutment.sol";
-import {MockIdentityRegistry, MockNFT, makeTaskIds} from "./Shared.sol";
+import {MockNFT, makeTaskIds} from "./Shared.sol";
 
 contract MockAbutment is Abutment {
     constructor(TrustedIdentity memory identity)
-        Abutment(AbutmentConfig({trustedIdentityUpdateDelay: 7 days, identity: identity}))
+        Abutment(
+            AbutmentConfig({owner: msg.sender, trustedIdentityUpdateDelay: 7 days, identity: identity})
+        )
     {}
 
     function addCollection(IERC721 token, address remote, uint256 supply) external {
@@ -36,10 +42,10 @@ contract AbutmentTest is Test {
     MockAbutment private ep;
     MockNFT private nft;
     MockNFT private newNft;
-    IIdentityRegistry private reg;
+    IdentityRegistry private reg;
 
     function setUp() public {
-        reg = new MockIdentityRegistry();
+        reg = new IdentityRegistry();
         IdentityId iid = IdentityId.wrap(1234);
         ep = new MockAbutment(Abutment.TrustedIdentity({
             registry: reg,
@@ -50,7 +56,7 @@ contract AbutmentTest is Test {
         ep.addSupport(nft);
         vm.mockCall(
             address(reg),
-            abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),
+            abi.encodeWithSelector(IdentityRegistry.readPermit.selector, address(this), iid),
             abi.encode(IIdentityRegistry.Permit({expiry: type(uint64).max}))
         );
     }
@@ -140,7 +146,7 @@ contract AbutmentTest is Test {
         );
         ep.setTrustedIdentity(
             Abutment.TrustedIdentity({
-                registry: IIdentityRegistry(address(0)),
+                registry: IdentityRegistry(address(0)),
                 id: IdentityId.wrap(0)
             })
         );
@@ -148,7 +154,7 @@ contract AbutmentTest is Test {
         vm.expectRevert(InterfaceUnsupported.selector);
         ep.setTrustedIdentity(
             Abutment.TrustedIdentity({
-                registry: IIdentityRegistry(address(0)),
+                registry: IdentityRegistry(address(0)),
                 id: IdentityId.wrap(0)
             })
         );

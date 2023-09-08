@@ -4,14 +4,18 @@ pragma solidity ^0.8.18;
 import {Test} from "forge-std/Test.sol";
 
 import {ERC721A, ERC721AQueryable} from "ERC721A/extensions/ERC721AQueryable.sol";
-import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IIdentityRegistry.sol";
+import {
+    IdentityId,
+    IIdentityRegistry,
+    IdentityRegistry
+} from "escrin/identity/v1/IdentityRegistry.sol";
 import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {IERC721} from "openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {Abutment} from "../src/Abutment.sol";
 import {SapphireAbutment} from "../src/SapphireAbutment.sol";
-import {MockIdentityRegistry, makeTaskIds} from "./Shared.sol";
+import {makeTaskIds} from "./Shared.sol";
 
 contract MockNFT is ERC721A, ERC721AQueryable {
     uint256 private nextTokenId;
@@ -30,13 +34,14 @@ contract SapphireAbutmentTest is Test {
 
     SapphireAbutment private p;
     MockNFT private nft;
-    IIdentityRegistry private reg;
+    IdentityRegistry private reg;
 
     function setUp() public {
-        reg = new MockIdentityRegistry();
+        reg = new IdentityRegistry();
         IdentityId iid = IdentityId.wrap(1234);
         p = new SapphireAbutment(
             Abutment.AbutmentConfig({
+            owner: msg.sender,
                 trustedIdentityUpdateDelay: 7 days,
                 identity: Abutment.TrustedIdentity({
                     registry: reg,
@@ -48,7 +53,7 @@ contract SapphireAbutmentTest is Test {
 
         vm.mockCall(
             address(reg),
-            abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),
+            abi.encodeWithSelector(IdentityRegistry.readPermit.selector, address(this), iid),
             abi.encode(IIdentityRegistry.Permit({expiry: type(uint64).max}))
         );
     }

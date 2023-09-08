@@ -78,6 +78,7 @@ abstract contract Abutment is
     }
 
     struct AbutmentConfig {
+        address owner;
         uint256 trustedIdentityUpdateDelay;
         TrustedIdentity identity;
     }
@@ -93,7 +94,7 @@ abstract contract Abutment is
     EnumerableSet.AddressSet private supportedCollections;
 
     constructor(AbutmentConfig memory c)
-        Ownable(msg.sender)
+        Ownable(c.owner)
         PermittedSubmitterTaskAcceptor(address(c.identity.registry), c.identity.id)
     {
         trustedIdentityUpdateDelay = c.trustedIdentityUpdateDelay;

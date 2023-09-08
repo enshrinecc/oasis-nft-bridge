@@ -19,14 +19,6 @@ contract MockNFT is ERC721Enumerable {
     }
 }
 
-contract MockIdentityRegistry is IdentityRegistry {
-    function test() public pure {}
-
-    function _whenIdentityCreated(IdentityId id, bytes calldata pers) internal virtual override {}
-
-    function _whenIdentityDestroyed(IdentityId id) internal virtual override {}
-}
-
 function makeTaskIds(uint256 count) pure returns (uint256[] memory) {
     uint256[] memory ids = new uint256[](count);
     for (uint256 i; i < count; ++i) {

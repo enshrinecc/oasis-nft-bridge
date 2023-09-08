@@ -3,7 +3,11 @@ pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {IdentityId, IIdentityRegistry} from "escrin/identity/v1/IIdentityRegistry.sol";
+import {
+    IdentityId,
+    IIdentityRegistry,
+    IdentityRegistry
+} from "escrin/identity/v1/IdentityRegistry.sol";
 import {ITaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {Ownable} from "openzeppelin/contracts/access/Ownable2Step.sol";
 import {
@@ -13,7 +17,7 @@ import {
 
 import {Abutment} from "../src/Abutment.sol";
 import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
-import {MockIdentityRegistry, MockNFT, makeTaskIds} from "./Shared.sol";
+import {MockNFT, makeTaskIds} from "./Shared.sol";
 
 contract UnsupportedNonEnumerableNFT is ERC721 {
     constructor() ERC721("Unsupported", "BAD") {
@@ -48,13 +52,14 @@ contract EmeraldAbutmentTest is Test {
 
     EmeraldAbutment private p;
     MockNFT private nft;
-    IIdentityRegistry private reg;
+    IdentityRegistry private reg;
 
     function setUp() public {
-        reg = new MockIdentityRegistry();
+        reg = new IdentityRegistry();
         IdentityId iid = IdentityId.wrap(1234);
         p = new EmeraldAbutment(
             Abutment.AbutmentConfig({
+                owner: msg.sender,
                 trustedIdentityUpdateDelay: 7 days,
                 identity: Abutment.TrustedIdentity({
                     registry: reg,
@@ -67,7 +72,7 @@ contract EmeraldAbutmentTest is Test {
 
         vm.mockCall(
             address(reg),
-            abi.encodeWithSelector(IIdentityRegistry.readPermit.selector, address(this), iid),
+            abi.encodeWithSelector(IdentityRegistry.readPermit.selector, address(this), iid),
             abi.encode(IIdentityRegistry.Permit({expiry: type(uint64).max}))
         );
 
