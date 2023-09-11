@@ -1,12 +1,23 @@
-import { Abutment as AbutmentAbi } from './abis.js';
+import {
+  Account,
+  Address,
+  Chain,
+  Hash,
+  PublicClient,
+  Transport,
+  WalletClient,
+  encodeAbiParameters,
+  parseGwei,
+} from 'viem';
 
-import { Address, Hash, PublicClient, WalletClient, encodeAbiParameters, parseGwei } from 'viem';
+import { Abutment as AbutmentAbi } from './abis.js';
 
 export class Abutment {
   constructor(
-    private readonly publicClient: PublicClient,
-    private readonly walletClient: WalletClient,
-    private readonly address: Address,
+    private readonly publicClient: PublicClient<Transport, Chain>,
+    private readonly walletClient: WalletClient<Transport, Chain, Account>,
+    private readonly walletAccount: Account,
+    public readonly address: Address,
   ) {}
 
   public async getSupportedCollections(): Promise<readonly Address[]> {
@@ -30,8 +41,8 @@ export class Abutment {
     return this.publicClient.readContract({
       address: this.address,
       abi: AbutmentAbi,
-      functionName: 'getAbutmentTokens',
-      args: [collection],
+      functionName: 'getHeldTokens',
+      args: [this.address, collection],
     });
   }
 
@@ -67,15 +78,17 @@ export class Abutment {
     );
     const request = {
       chain: this.publicClient.chain,
-      account: (await this.walletClient.requestAddresses())[0],
+      account: this.walletAccount,
       address: this.address,
       abi: AbutmentAbi,
       functionName: 'acceptTaskResults',
       args: [taskIds, '0x' /* proof */, report],
       type: 'legacy',
-      gasPrice: parseGwei('100'),
+      gasPrice: BigInt(100e9),
     } as const;
     const gas = await this.publicClient.estimateContractGas(request);
+    const { result: selector } = await this.publicClient.simulateContract({ ...request, gas });
+    if (selector.quantifier !== 1 /* all */) throw new Error('task results not accepted');
     const hash = await this.walletClient.writeContract({ ...request, gas });
     return new Transaction(hash, this.publicClient);
   }
@@ -96,6 +109,7 @@ export type TokenStatus = {
 };
 
 export enum Presence {
+  Unknown = 0,
   Absent = 1,
   Abutment = 2,
   Wallet = 3,

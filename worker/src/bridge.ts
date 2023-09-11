@@ -37,7 +37,7 @@ async function submit(
 ): Promise<void> {
   try {
     if (actions.length > 0) {
-      console.log(`${actionName} ${actions.length} tokens`);
+      console.log(`${actionName}ing ${actions.length} tokens`);
       const tx = await abutment.submitTaskResults(actions);
       await tx.wait();
     }

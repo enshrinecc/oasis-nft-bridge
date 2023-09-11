@@ -1,5 +1,5 @@
 import { Chain } from 'viem';
-import { localhost } from 'viem/chains';
+import { foundry, localhost } from 'viem/chains';
 
 export const sapphire = {
   id: 0x5afe,
@@ -79,11 +79,22 @@ export const emeraldTestnet = {
   },
 } as Chain;
 
-export default function (name: string): Chain {
-  if (name === 'local') return { ...localhost, id: 31337 };
-  if (name === 'sapphire-testnet') return sapphireTestnet;
-  if (name === 'sapphire-mainnet') return sapphire;
-  if (name === 'emerald-testnet') return emeraldTestnet;
-  if (name === 'emerald-mainnet') return emerald;
-  throw new Error(`unrecognized chain: ${name}`);
+export function getChain(chainId: number, rpcUrl?: string): Chain {
+  if (rpcUrl) {
+    return {
+      id: chainId,
+      name: 'Custom Network',
+      network: 'custom',
+      nativeCurrency: { decimals: 18, name: '', symbol: '' },
+      rpcUrls: {
+        default: { http: [rpcUrl] },
+        public: { http: [rpcUrl] },
+      },
+    };
+  }
+  if (chainId === 0x5afe) return sapphire;
+  if (chainId === 0x5aff) return sapphireTestnet;
+  if (chainId === 31337) return foundry;
+  if (chainId === 1337) return localhost;
+  throw new Error(`the chain with id ${chainId} is unrecognized, so \`rpcUrl\` is required`);
 }

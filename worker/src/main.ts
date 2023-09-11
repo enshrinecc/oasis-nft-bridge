@@ -1,32 +1,43 @@
-import escrinWorker, { ApiError, EscrinRunner } from '@escrin/worker';
-
-import { Address, createPublicClient, createWalletClient, http, toHex } from 'viem';
+import escrinWorker, * as escrin from '@escrin/worker';
+import { Address, createPublicClient, createWalletClient, http, isHex, toHex } from 'viem';
 import { PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts';
 
 import { Abutment } from './abutment.js';
-import { bridge } from './bridge';
-import getChain from './chains.js';
+import { bridge } from './bridge.js';
+import { getChain } from './chains.js';
 
 type Config = {
-  env: 'local' | 'mainnet' | 'testnet';
-  emerald: NetworkConfig;
-  sapphire: NetworkConfig;
+  emerald: ChainConfig;
+  sapphire: ChainConfig;
 };
 
-type NetworkConfig = {
-  gateway: string;
+type ChainConfig = {
+  network: escrin.Network;
+  identity: escrin.Identity;
   abutment: Address;
 };
 
 export default escrinWorker({
-  async tasks(rnr: EscrinRunner): Promise<void> {
-    const config = validateConfig(await rnr.getConfig());
+  async tasks(rnr: escrin.Runner): Promise<void> {
+    const config = parseConfig(await rnr.getConfig());
 
-    const omniKey = await rnr.getOmniKey(`sapphire-${config.env}`);
+    const permitParams = {
+      permitTtl: 3 * 60 * 60, // 3 hours
+      duration: 10 * 60, // 10 minutes
+    };
+
+    // Start by acquiring the submitter wallet, which will be funded and used to submit transactions.
+    await rnr.acquireIdentity({ ...config.sapphire, ...permitParams });
+    const omniKey = await rnr.getOmniKey(config.sapphire);
     const wallet = await deriveWallet(omniKey);
+    console.debug('derived worker wallet', wallet.address);
 
-    const emeraldAbutment = await makeAbutment('emerald', config, wallet);
-    const sapphireAbutment = await makeAbutment('sapphire', config, wallet);
+    await rnr.acquireIdentity({ ...config.emerald, ...permitParams, recipient: wallet.address });
+    await rnr.acquireIdentity({ ...config.sapphire, ...permitParams, recipient: wallet.address });
+    console.debug('acquired worker submitter identities');
+
+    const emeraldAbutment = await makeAbutment(config.emerald, wallet);
+    const sapphireAbutment = await makeAbutment(config.sapphire, wallet);
 
     try {
       console.log('emerald 🌉 sapphire');
@@ -43,19 +54,28 @@ export default escrinWorker({
   },
 });
 
-function validateConfig(config: any): Config {
+function parseConfig(config: Record<string, unknown>): Config {
+  const { emerald, sapphire } = config;
+  return {
+    emerald: parseChainConfig('emerald', emerald),
+    sapphire: parseChainConfig('sapphire', sapphire),
+  };
+}
+
+function parseChainConfig(name: string, config: unknown): ChainConfig {
   try {
-    if (!config.emerald.gateway || !config.emerald.abutment) {
-      throw new ApiError(500, `missing or invalid emerald config`);
-    }
-    if (!config.sapphire.gateway || !config.sapphire.abutment) {
-      throw new ApiError(500, `missing or invalid sapphire config`);
-    }
+    if (!config) throw new Error('missing config object');
+    if (typeof config !== 'object') throw new Error('invalid config object');
+    const { network, identity, abutment } = config as Record<string, unknown>;
+    if (!isHex(abutment)) throw new Error('invalid abutment address');
+    return {
+      network: escrin.parseNetwork(network),
+      identity: escrin.parseIdentity(identity),
+      abutment,
+    };
   } catch (e: any) {
-    console.error('failed to validate config:', e);
-    throw e;
+    throw new escrin.ApiError(500, `failed to parse ${name} config: ${e.message}`);
   }
-  return config;
 }
 
 async function deriveWallet(omniKey: CryptoKey): Promise<PrivateKeyAccount> {
@@ -72,14 +92,18 @@ async function deriveWallet(omniKey: CryptoKey): Promise<PrivateKeyAccount> {
   return privateKeyToAccount(toHex(new Uint8Array(key)));
 }
 
-async function makeAbutment(
-  net: 'emerald' | 'sapphire',
-  config: Config,
-  wallet: PrivateKeyAccount,
-): Promise<Abutment> {
-  const chain = config.env === 'local' ? getChain('local') : getChain(`${net}-${config.env}`);
-  const transport = http(config[net].gateway);
-  const publicClient = createPublicClient({ chain, transport });
-  const walletClient = createWalletClient({ account: wallet, chain, transport });
-  return new Abutment(publicClient, walletClient, config[net].abutment);
+async function makeAbutment(config: ChainConfig, wallet: PrivateKeyAccount): Promise<Abutment> {
+  const chain = getChain(config.network.chainId, config.network.rpcUrl);
+  const publicClient = createPublicClient({ chain, transport: http() });
+
+  const fundingWei = await publicClient.getBalance({ address: wallet.address });
+  const funding = Number(fundingWei / BigInt(1e9)) / 1e9;
+  if (funding < 0.01)
+    throw new escrin.ApiError(
+      500,
+      `submitter wallet ${wallet.address} is unfunded on chain ${chain.id}`,
+    );
+
+  const walletClient = createWalletClient({ account: wallet, chain, transport: http() });
+  return new Abutment(publicClient, walletClient, wallet, config.abutment);
 }
