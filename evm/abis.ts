@@ -6,6 +6,11 @@ export const Abutment = [
   },
   {
     "inputs": [],
+    "name": "InterfaceUnsupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "MismatchedTask",
     "type": "error"
   },
@@ -16,12 +21,29 @@ export const Abutment = [
   },
   {
     "inputs": [],
-    "name": "NotTaskAcceptor",
+    "name": "NotTaskHub",
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "NotTaskHub",
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
     "type": "error"
   },
   {
@@ -87,44 +109,37 @@ export const Abutment = [
     "inputs": [
       {
         "indexed": false,
-        "internalType": "contract ITaskAcceptorV1",
-        "name": "to",
-        "type": "address"
-      }
-    ],
-    "name": "TaskAcceptorChanged",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "contract ITaskAcceptorV1",
-        "name": "incomingTaskAcceptor",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "activeTime",
-        "type": "uint256"
-      }
-    ],
-    "name": "TaskAcceptorIncoming",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "address",
         "name": "to",
         "type": "address"
       }
     ],
     "name": "TaskHubChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "contract IIdentityRegistry",
+            "name": "registry",
+            "type": "address"
+          },
+          {
+            "internalType": "IdentityId",
+            "name": "id",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Abutment.TrustedIdentity",
+        "name": "identity",
+        "type": "tuple"
+      }
+    ],
+    "name": "TrustedIdentityIncoming",
     "type": "event"
   },
   {
@@ -157,7 +172,7 @@ export const Abutment = [
       {
         "components": [
           {
-            "internalType": "enum ITaskAcceptorV1.Quantifier",
+            "internalType": "enum ITaskAcceptor.Quantifier",
             "name": "quantifier",
             "type": "uint8"
           },
@@ -167,7 +182,7 @@ export const Abutment = [
             "type": "uint256[]"
           }
         ],
-        "internalType": "struct ITaskAcceptorV1.TaskIdSelector",
+        "internalType": "struct ITaskAcceptor.TaskIdSelector",
         "name": "sel",
         "type": "tuple"
       }
@@ -233,23 +248,10 @@ export const Abutment = [
   },
   {
     "inputs": [],
-    "name": "getTaskAcceptor",
-    "outputs": [
-      {
-        "internalType": "contract ITaskAcceptorV1",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "getTaskHub",
     "outputs": [
       {
-        "internalType": "contract ITaskHubV1",
+        "internalType": "contract ITaskHub",
         "name": "",
         "type": "address"
       }
@@ -330,6 +332,24 @@ export const Abutment = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getTrustedIdentity",
+    "outputs": [
+      {
+        "internalType": "contract IIdentityRegistry",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "IdentityId",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "contract IERC721",
@@ -372,6 +392,37 @@ export const Abutment = [
         "internalType": "uint256[]",
         "name": "votingTokens",
         "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "incomingTrustedIdentity",
+    "outputs": [
+      {
+        "internalType": "contract IIdentityRegistry",
+        "name": "registry",
+        "type": "address"
+      },
+      {
+        "internalType": "IdentityId",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "incomingTrustedIdentityActiveTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -447,6 +498,31 @@ export const Abutment = [
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "contract IIdentityRegistry",
+            "name": "registry",
+            "type": "address"
+          },
+          {
+            "internalType": "IdentityId",
+            "name": "id",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct Abutment.TrustedIdentity",
+        "name": "identity",
+        "type": "tuple"
+      }
+    ],
+    "name": "setTrustedIdentity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -474,6 +550,19 @@ export const Abutment = [
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "trustedIdentityUpdateDelay",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
