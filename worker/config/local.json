@@ -1,11 +1,25 @@
 {
   "env": "local",
   "emerald": {
-    "gateway": "http://127.0.0.1:8545",
-    "abutment": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+    "network": {
+      "chainId": 1337,
+      "rpcUrl": "http://127.0.0.1:8546"
+    },
+    "identity": {
+      "registry": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "id": "0xc0d25854e8467552bed0beb775240cd28b24805832c79f3aad645bac18866ed9"
+    },
+    "abutment": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
   },
   "sapphire": {
-    "gateway": "http://127.0.0.1:8545",
+    "network": {
+      "chainId": 31337,
+      "rpcUrl": "http://127.0.0.1:8545"
+    },
+    "identity": {
+      "registry": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "id": "0xc6e7a155cc1cc31d2269ab88cbb1a465eb1be0a1dc1e1bb50f2dc11b8f42ad1e"
+    },
     "abutment": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
   }
 }
