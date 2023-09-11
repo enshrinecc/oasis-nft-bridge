@@ -9,8 +9,12 @@ import {SapphireAbutment} from "../src/SapphireAbutment.sol";
 abstract contract DeploymentScript is Script {
     function _abutmentConfig() internal view returns (Abutment.AbutmentConfig memory) {
         return Abutment.AbutmentConfig({
-            taskAcceptorUpdateDelay: 7 days,
-            initialTaskAcceptor: address(vm.envAddress("TASK_ACCEPTOR"))
+            owner: msg.sender,
+            trustedIdentityUpdateDelay: 7 days,
+            identity: Abutment.TrustedIdentity({
+                registry: address(vm.envAddress("IDENTITY_REGISTRY")),
+                id: vm.envUint("IDENTITY_ID")
+            })
         });
     }
 }

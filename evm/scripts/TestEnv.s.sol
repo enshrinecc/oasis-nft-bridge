@@ -3,10 +3,9 @@ pragma solidity ^0.8.18;
 
 import "forge-std/Script.sol";
 
-import {IdentityId, OmniKeyStore} from "escrin/identity/v1/OmniKeyStore.sol";
+import {IdentityId, IdentityRegistry, OmniKeyStore} from "escrin/identity/v1/OmniKeyStore.sol";
 import {Permitter} from "escrin/identity/v1/permitters/Permitter.sol";
-import {TaskAcceptorV1} from "escrin/tasks/acceptor/TaskAcceptor.sol";
-import {TaskIdSelectorOps} from "escrin/tasks/acceptor/ITaskAcceptor.sol";
+import {TaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {
     ERC721,
     ERC721Enumerable
@@ -17,27 +16,27 @@ import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
 import {SapphireAbutment} from "../src/SapphireAbutment.sol";
 
 contract MockPermitter is Permitter {
-    function _grantPermit(IdentityId, address, bytes calldata, bytes calldata)
+    constructor(IdentityRegistry registry) Permitter(address(registry)) {}
+
+    function _acquireIdentity(IdentityId, address, uint64, bytes calldata, bytes calldata)
         internal
         pure
         override
-        returns (bool allow, uint64 expiry)
+        returns (uint64 expiry)
     {
-        return (true, 0);
+        return type(uint64).max;
     }
 
-    function _revokePermit(IdentityId, address, bytes calldata, bytes calldata)
+    function _releaseIdentity(IdentityId, address, bytes calldata, bytes calldata)
         internal
         pure
         override
-        returns (bool allow)
     {
-        return true;
     }
 }
 
-contract MockTaskAcceptor is TaskAcceptorV1 {
-    function _acceptTaskResults(uint256[] calldata, bytes calldata, bytes calldata, address)
+contract MockTaskAcceptor is TaskAcceptor {
+    function _acceptTaskResults(uint256[] calldata, bytes calldata, bytes calldata)
         internal
         pure
         override
@@ -70,23 +69,38 @@ contract Setup is Script {
         vm.stopBroadcast();
     }
 
+    address payable constant WORKER_OMNI_ADDR = payable(0x70884E7695cd256f075A18EB50232a488d897614);
+
     function _setupEmerald()
         internal
         broadcasted
-        returns (EmeraldAbutment abutment, MockERC721 nft)
+        returns (EmeraldAbutment abutment, MockERC721 nft, Abutment.TrustedIdentity memory identity)
     {
+        // Create IdentityRegistry and trusted identity
+        IdentityRegistry reg = new IdentityRegistry();
+        Permitter permitter = new MockPermitter(reg);
+        IdentityId identityId = reg.createIdentity(address(permitter), "emerald identity");
+        identity = Abutment.TrustedIdentity({registry: reg, id: identityId});
+        console2.log("emerald identity registry:", address(reg));
+        console2.log("emerald identity: %x", IdentityId.unwrap(identityId));
+
         // Set up NFT
         nft = new MockERC721();
         console2.log("emerald NFT", address(nft));
         nft.mint(_getNftTotalSupply(), msg.sender);
 
         // Set up abutment
-        TaskAcceptorV1 taskAcceptor = new MockTaskAcceptor();
         abutment = new EmeraldAbutment(Abutment.AbutmentConfig({
-            taskAcceptorUpdateDelay: 7 days,
-            initialTaskAcceptor: address(taskAcceptor)
+            owner: address(msg.sender),
+            trustedIdentityUpdateDelay: 7 days,
+            identity: Abutment.TrustedIdentity({
+                registry: reg,
+                id: identityId
+            })
         }), 16 weeks);
         console2.log("emerald abutment:", address(abutment));
+
+        WORKER_OMNI_ADDR.transfer(1 ether);
     }
 
     function _setupSapphire(MockERC721 emeraldNft)
@@ -94,25 +108,31 @@ contract Setup is Script {
         broadcasted
         returns (SapphireAbutment abutment, MockERC721 nft)
     {
+        // Setup up identity
+        OmniKeyStore keyStore = new OmniKeyStore();
+        Permitter permitter = new MockPermitter(keyStore);
+        IdentityId identityId = keyStore.createIdentity(address(permitter), "testing");
+        console2.log("sapphire registry:", address(keyStore));
+        console2.log("sapphire identity: %x", IdentityId.unwrap(identityId));
+
         nft = new MockERC721();
         console2.log("sapphire NFT", address(nft));
 
-        // Setup up identity
-        OmniKeyStore keyStore = new OmniKeyStore();
-        Permitter permitter = new MockPermitter();
-        IdentityId identityId = keyStore.createIdentity(address(permitter), "testing");
-        console2.log("worker identity: %x", IdentityId.unwrap(identityId));
-
         // Set up abutment
-        TaskAcceptorV1 taskAcceptor = new MockTaskAcceptor();
         abutment = new SapphireAbutment(Abutment.AbutmentConfig({
-            taskAcceptorUpdateDelay: 7 days,
-            initialTaskAcceptor: address(taskAcceptor)
+            owner: address(msg.sender),
+            trustedIdentityUpdateDelay: 7 days,
+            identity: Abutment.TrustedIdentity({
+                registry: keyStore,
+                id: identityId
+            })
         }));
         console2.log("sapphire abutment:", address(abutment));
 
         nft.mint(_getNftTotalSupply(), address(abutment));
         abutment.supportToken(address(nft), address(emeraldNft));
+
+        WORKER_OMNI_ADDR.transfer(1 ether);
     }
 
     function _getNftTotalSupply() internal pure returns (uint256) {
@@ -122,7 +142,7 @@ contract Setup is Script {
 
 contract SetupSingleNetwork is Setup {
     function run() external {
-        (EmeraldAbutment emeraldAbutment, MockERC721 emeraldNft) = _setupEmerald();
+        (EmeraldAbutment emeraldAbutment, MockERC721 emeraldNft,) = _setupEmerald();
         (, MockERC721 sapphireNft) = _setupSapphire(emeraldNft);
         _completeSetup(emeraldAbutment, emeraldNft, sapphireNft);
     }
@@ -153,7 +173,7 @@ contract SetupMultiNetwork is Setup {
         uint256 sapphireFork = vm.createFork("hardhat");
 
         vm.selectFork(emeraldFork);
-        (EmeraldAbutment emeraldAbutment, MockERC721 emeraldNft) = _setupEmerald();
+        (EmeraldAbutment emeraldAbutment, MockERC721 emeraldNft,) = _setupEmerald();
 
         vm.selectFork(sapphireFork);
         (, MockERC721 sapphireNft) = _setupSapphire(emeraldNft);
@@ -168,5 +188,8 @@ contract SetupMultiNetwork is Setup {
         MockERC721 sapphireNft
     ) internal broadcasted {
         emeraldAbutment.proposeToken(address(emeraldNft), address(sapphireNft));
+        emeraldAbutment.vote(emeraldNft, emeraldAbutment.getVotingTokens(msg.sender, emeraldNft));
+        emeraldNft.safeTransferFrom(msg.sender, address(emeraldAbutment), 1);
+        emeraldNft.safeTransferFrom(msg.sender, address(emeraldAbutment), 2);
     }
 }
