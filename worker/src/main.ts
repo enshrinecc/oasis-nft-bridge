@@ -22,7 +22,7 @@ export default escrinWorker({
     const config = parseConfig(await rnr.getConfig());
 
     const permitParams = {
-      permitTtl: 3 * 60 * 60, // 3 hours
+      permitTtl: 24 * 60 * 60, // 24 hours
       duration: 10 * 60, // 10 minutes
     };
 
