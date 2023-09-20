@@ -19,9 +19,16 @@ const collections: Record<SupportedCollection, Collection> = {
       31337: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
     },
   },
+  mock: {
+    name: 'Mock Token',
+    chains: {
+      0x5aff: '0x33340BdC56E220741846684A93E7E08D4495Dca6',
+      0xa515: '0x0534868ef68D4312Ae1F10ba6b0b621F2308d227',
+    },
+  },
 };
 
-export type SupportedCollection = 'test' | 'ai-rose';
+export type SupportedCollection = 'test' | 'ai-rose' | 'mock';
 export type SupportedChain = 0x5aff | 0xa515 | 0x5afe | 0xa516 | 1337 | 31337;
 
 export type Collection = {

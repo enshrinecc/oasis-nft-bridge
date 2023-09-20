@@ -1,0 +1,25 @@
+{
+  "env": "testnet",
+  "emerald": {
+    "network": {
+      "chainId": 0xa515,
+      "rpcUrl": "https://testnet.emerald.oasis.dev"
+    },
+    "identity": {
+      "registry": "0x8998cC6D1ea9D07b002330606A6027aDB64798e6",
+      "id": "0x7b9f2213e385fe192b358b7b32f2d8d0777dcf064ec31ab4b75866eb2a3ea133"
+    },
+    "abutment": "0x63c13Ee9BecC8f35dC034F026Ae8d18A4D1E7f0E"
+  },
+  "sapphire": {
+    "network": {
+      "chainId": 0x5aff,
+      "rpcUrl": "https://testnet.sapphire.oasis.dev"
+    },
+    "identity": {
+      "registry": "0x3C74f783A3F50651dD116eE8432B15B418607F23",
+      "id": "0xe90b7c3dbbf829a9db6dd17594559d63a15470c67da7528f4463299c193ff2c4"
+    },
+    "abutment": "0xCf05273778a80416098eC9219F40caaEe9b27A36"
+  }
+}
