@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import {Test} from "forge-std/Test.sol";
 
-import {InterfaceUnsupported} from "escrin/Types.sol";
 import {
     IdentityId,
     IIdentityRegistry,
@@ -18,9 +17,7 @@ import {MockNFT, makeTaskIds} from "./Shared.sol";
 
 contract MockAbutment is Abutment {
     constructor(TrustedIdentity memory identity)
-        Abutment(
-            AbutmentConfig({owner: msg.sender, trustedIdentityUpdateDelay: 7 days, identity: identity})
-        )
+        Abutment(msg.sender, 7 days, address(identity.registry), identity.id)
     {}
 
     function addCollection(IERC721 token, address remote, uint256 supply) external {
@@ -151,7 +148,7 @@ contract AbutmentTest is Test {
             })
         );
 
-        vm.expectRevert(InterfaceUnsupported.selector);
+        vm.expectRevert(IdentityRegistry.InterfaceUnsupported.selector);
         ep.setTrustedIdentity(
             Abutment.TrustedIdentity({
                 registry: IdentityRegistry(address(0)),

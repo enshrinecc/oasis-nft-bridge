@@ -21,5 +21,6 @@ emerald-mainnet = "https://emerald.oasis.io"
 line_length = 100
 
 [profile.release]
+optimizer = true
 optimizer_runs = 30_000
 via_ir = true

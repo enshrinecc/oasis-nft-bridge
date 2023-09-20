@@ -57,17 +57,7 @@ contract EmeraldAbutmentTest is Test {
     function setUp() public {
         reg = new IdentityRegistry();
         IdentityId iid = IdentityId.wrap(1234);
-        p = new EmeraldAbutment(
-            Abutment.AbutmentConfig({
-                owner: msg.sender,
-                trustedIdentityUpdateDelay: 7 days,
-                identity: Abutment.TrustedIdentity({
-                    registry: reg,
-                    id: iid
-                })
-            }),
-            12 weeks
-        );
+        p = new EmeraldAbutment(address(this), 7 days, address(reg), iid, 12 weeks);
         nft = new MockNFT();
 
         vm.mockCall(

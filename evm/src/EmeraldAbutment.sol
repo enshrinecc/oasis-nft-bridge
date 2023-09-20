@@ -7,7 +7,7 @@ import {
 } from "openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {Abutment} from "./Abutment.sol";
+import {Abutment, IdentityId} from "./Abutment.sol";
 
 contract EmeraldAbutment is Abutment {
     event TokenProposed(IERC721 indexed token);
@@ -18,9 +18,13 @@ contract EmeraldAbutment is Abutment {
 
     mapping(IERC721 => uint256) public deactivationTimes;
 
-    constructor(AbutmentConfig memory abutmentConfig, uint64 tokenSupportDuration)
-        Abutment(abutmentConfig)
-    {
+    constructor(
+        address owner,
+        uint256 trustedIdentityUpdateDelay,
+        address trustedIdentityRegistry,
+        IdentityId trustedIdentityId,
+        uint64 tokenSupportDuration
+    ) Abutment(owner, trustedIdentityUpdateDelay, trustedIdentityRegistry, trustedIdentityId) {
         tokenSupportDuration_ = tokenSupportDuration;
     }
 

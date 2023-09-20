@@ -77,12 +77,6 @@ abstract contract Abutment is
         IdentityId id;
     }
 
-    struct AbutmentConfig {
-        address owner;
-        uint256 trustedIdentityUpdateDelay;
-        TrustedIdentity identity;
-    }
-
     event TrustedIdentityIncoming(TrustedIdentity identity);
 
     uint256 public immutable trustedIdentityUpdateDelay;
@@ -93,11 +87,13 @@ abstract contract Abutment is
     mapping(IERC721 => mapping(uint256 => Token)) internal tokens;
     EnumerableSet.AddressSet private supportedCollections;
 
-    constructor(AbutmentConfig memory c)
-        Ownable(c.owner)
-        PermittedSubmitterTaskAcceptor(address(c.identity.registry), c.identity.id)
-    {
-        trustedIdentityUpdateDelay = c.trustedIdentityUpdateDelay;
+    constructor(
+        address owner,
+        uint256 trustedIdentityUpdateDelay_,
+        address trustedIdentityRegistry,
+        IdentityId trustedIdentityId
+    ) Ownable(owner) PermittedSubmitterTaskAcceptor(trustedIdentityRegistry, trustedIdentityId) {
+        trustedIdentityUpdateDelay = trustedIdentityUpdateDelay_;
     }
 
     /// Votes to take action on the token with the weight of the provided token IDs.

@@ -7,13 +7,18 @@ import {
 } from "openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import {ERC165Checker} from "openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import {Abutment} from "./Abutment.sol";
+import {Abutment, IdentityId, IIdentityRegistry} from "./Abutment.sol";
 
 contract SapphireAbutment is Abutment {
     event TokenSupported(IERC721 indexed token);
     event TokenFrozen(IERC721 indexed token);
 
-    constructor(AbutmentConfig memory abutmentConfig) Abutment(abutmentConfig) {}
+    constructor(
+        address owner,
+        uint256 trustedIdentityUpdateDelay,
+        address trustedIdentityRegistry,
+        IdentityId trustedIdentityId
+    ) Abutment(owner, trustedIdentityUpdateDelay, trustedIdentityRegistry, trustedIdentityId) {}
 
     // The caller must manually verify the details of the added contract.
     function supportToken(address tokenAddr, address remoteAddr) external onlyOwner {

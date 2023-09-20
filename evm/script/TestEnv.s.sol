@@ -5,7 +5,6 @@ import "forge-std/Script.sol";
 
 import {IdentityId, IdentityRegistry, OmniKeyStore} from "escrin/identity/v1/OmniKeyStore.sol";
 import {Permitter} from "escrin/identity/v1/permitters/Permitter.sol";
-import {TaskAcceptor, TaskIdSelectorOps} from "escrin/tasks/v1/acceptors/TaskAcceptor.sol";
 import {
     ERC721,
     ERC721Enumerable
@@ -16,7 +15,7 @@ import {EmeraldAbutment} from "../src/EmeraldAbutment.sol";
 import {SapphireAbutment} from "../src/SapphireAbutment.sol";
 
 contract MockPermitter is Permitter {
-    constructor(IdentityRegistry registry) Permitter(address(registry)) {}
+    constructor(IdentityRegistry registry) Permitter(registry) {}
 
     function _acquireIdentity(IdentityId, address, uint64, bytes calldata, bytes calldata)
         internal
@@ -31,19 +30,7 @@ contract MockPermitter is Permitter {
         internal
         pure
         override
-    {
-    }
-}
-
-contract MockTaskAcceptor is TaskAcceptor {
-    function _acceptTaskResults(uint256[] calldata, bytes calldata, bytes calldata)
-        internal
-        pure
-        override
-        returns (TaskIdSelector memory)
-    {
-        return TaskIdSelectorOps.all();
-    }
+    {}
 }
 
 contract MockERC721 is ERC721Enumerable {
@@ -90,14 +77,7 @@ contract Setup is Script {
         nft.mint(_getNftTotalSupply(), msg.sender);
 
         // Set up abutment
-        abutment = new EmeraldAbutment(Abutment.AbutmentConfig({
-            owner: address(msg.sender),
-            trustedIdentityUpdateDelay: 7 days,
-            identity: Abutment.TrustedIdentity({
-                registry: reg,
-                id: identityId
-            })
-        }), 16 weeks);
+        abutment = new EmeraldAbutment(msg.sender, 7 days, address(reg), identityId, 16 weeks);
         console2.log("emerald abutment:", address(abutment));
 
         WORKER_OMNI_ADDR.transfer(1 ether);
@@ -119,14 +99,7 @@ contract Setup is Script {
         console2.log("sapphire NFT", address(nft));
 
         // Set up abutment
-        abutment = new SapphireAbutment(Abutment.AbutmentConfig({
-            owner: address(msg.sender),
-            trustedIdentityUpdateDelay: 7 days,
-            identity: Abutment.TrustedIdentity({
-                registry: keyStore,
-                id: identityId
-            })
-        }));
+        abutment = new SapphireAbutment(msg.sender, 7 days, address(keyStore), identityId);
         console2.log("sapphire abutment:", address(abutment));
 
         nft.mint(_getNftTotalSupply(), address(abutment));

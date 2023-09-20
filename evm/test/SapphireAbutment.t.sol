@@ -39,16 +39,7 @@ contract SapphireAbutmentTest is Test {
     function setUp() public {
         reg = new IdentityRegistry();
         IdentityId iid = IdentityId.wrap(1234);
-        p = new SapphireAbutment(
-            Abutment.AbutmentConfig({
-            owner: msg.sender,
-                trustedIdentityUpdateDelay: 7 days,
-                identity: Abutment.TrustedIdentity({
-                    registry: reg,
-                    id: iid
-                })
-            })
-        );
+        p = new SapphireAbutment(address(this), 7 days, address(reg), iid);
         nft = new MockNFT();
 
         vm.mockCall(
