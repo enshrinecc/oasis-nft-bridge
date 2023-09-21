@@ -118,7 +118,7 @@ export function App() {
                           execution environment (TEE), which provides integrity and confidentiality.
                         </li>
                         <li className="my-3">
-                          Bridging may take up to 30 minutes, but usually will taken about five.
+                          Bridging may take up to 30 minutes, but usually will take about five.
                         </li>
                         <li className="my-3">
                           Once bridging has completed, your token will disappear from the list
