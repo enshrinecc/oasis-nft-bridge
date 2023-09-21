@@ -97,6 +97,9 @@ function Token({
       }
       return url.toString();
     },
+    watch: true,
+    cacheTime: 2 * 60 * 1_000,
+    staleTime: 2 * 60 * 1_000,
   });
 
   const { config, isLoading: isPreparing } = usePrepareContractWrite({
@@ -104,7 +107,7 @@ function Token({
     abi: erc721ABI,
     functionName: 'safeTransferFrom',
     args: [address!, getAbutment(chain?.id)!, id],
-    enabled: false && isConnected && collectionIsSupported(collection, chain?.id),
+    enabled: (presence === 0 || presence === 3) && isConnected && collectionIsSupported(collection, chain?.id),
   });
   const { data, write, isLoading: isWriting } = useContractWrite(config);
   const { isLoading: isWaiting } = useWaitForTransaction({ hash: data?.hash });

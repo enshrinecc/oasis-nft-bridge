@@ -19,7 +19,8 @@ export function useVoteStatus(
     functionName: 'getVoteStatus',
     args: [getCollectionAddr(collection!, chainId)!],
     enabled: chainIsSupported(chainId) && collectionIsSupported(collection, chainId),
-    cacheOnBlock: true,
+    cacheTime: 20 * 60 * 1_000, // 20 minutes
+    staleTime: 20 * 60 * 1_000, // 20 minutes
     watch: true,
   });
 }
