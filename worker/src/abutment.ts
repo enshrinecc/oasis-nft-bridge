@@ -9,7 +9,6 @@ import {
   Transport,
   WalletClient,
   encodeAbiParameters,
-  parseGwei,
 } from 'viem';
 
 import { Abutment as AbutmentAbi } from './abis.js';
@@ -101,9 +100,16 @@ export class Abutment {
 }
 
 class Transaction {
-  constructor(public readonly hash: Hash, private readonly client: PublicClient) {}
+  constructor(
+    public readonly hash: Hash,
+    private readonly client: PublicClient<Transport, Chain>,
+  ) {}
 
   async wait(): Promise<void> {
+    if (this.client.chain.id !== 31337 && this.client.chain.id !== 1337) {
+      // Give the gateway some time to update.
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
     let retriesRemaining = 3;
     while (true) {
       try {
