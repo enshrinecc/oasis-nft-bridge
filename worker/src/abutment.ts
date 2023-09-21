@@ -1,9 +1,11 @@
 import {
   Account,
   Address,
+  BlockNotFoundError,
   Chain,
   Hash,
   PublicClient,
+  TransactionNotFoundError,
   Transport,
   WalletClient,
   encodeAbiParameters,
@@ -87,8 +89,12 @@ export class Abutment {
       gasPrice: BigInt(100e9),
     } as const;
     const gas = await this.publicClient.estimateContractGas(request);
-    const { result: selector } = await this.publicClient.simulateContract({ ...request, gas });
-    if (selector.quantifier !== 1 /* all */) throw new Error('task results not accepted');
+    if (Math.abs(this.publicClient.chain.id - 0x5afe) > 1) {
+      // Does not work on Sapphire due to wrapper not supporting signed queries.
+      const { result: selector } = await this.publicClient.simulateContract({ ...request, gas });
+      if (selector.quantifier !== 1 /* all */)
+        throw new Error(`task results not accepted. quantifier=${selector.quantifier}`);
+    }
     const hash = await this.walletClient.writeContract({ ...request, gas });
     return new Transaction(hash, this.publicClient);
   }
@@ -98,8 +104,22 @@ class Transaction {
   constructor(public readonly hash: Hash, private readonly client: PublicClient) {}
 
   async wait(): Promise<void> {
-    const receipt = await this.client.waitForTransactionReceipt({ hash: this.hash });
-    if (receipt.status !== 'success') throw new Error(`tx ${this.hash} failed`);
+    let retriesRemaining = 3;
+    while (true) {
+      try {
+        const { status } = await this.client.waitForTransactionReceipt({ hash: this.hash });
+        if (status !== 'success') throw new Error(`failed to post ${this.hash}`);
+        return;
+      } catch (e: any) {
+        if (e instanceof BlockNotFoundError || e instanceof TransactionNotFoundError) {
+          if (retriesRemaining === 0) throw e;
+          retriesRemaining--;
+          await new Promise((resolve) => setTimeout(resolve, 2_000));
+          continue;
+        }
+        throw e;
+      }
+    }
   }
 }
 
