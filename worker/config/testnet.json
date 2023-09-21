@@ -2,7 +2,7 @@
   "env": "testnet",
   "emerald": {
     "network": {
-      "chainId": 0xa515,
+      "chainId": 42261,
       "rpcUrl": "https://testnet.emerald.oasis.dev"
     },
     "identity": {
@@ -13,7 +13,7 @@
   },
   "sapphire": {
     "network": {
-      "chainId": 0x5aff,
+      "chainId": 23295,
       "rpcUrl": "https://testnet.sapphire.oasis.dev"
     },
     "identity": {
