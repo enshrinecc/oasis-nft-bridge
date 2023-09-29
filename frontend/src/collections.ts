@@ -57,6 +57,17 @@ export function getCollectionAddr(id: string, chainId: number | undefined): Addr
     : undefined;
 }
 
+export function getCollectionExplorerURL(
+  id: string,
+  chainId: number | undefined,
+): string | undefined {
+  const addr = getCollectionAddr(id, chainId);
+  if (!addr) return;
+  const network = chainId === 0x5afe || chainId === 0xa516 ? 'mainnet' : ' testnet';
+  const classification = getNetworkClassification(chainId as SupportedChain);
+  return `https://explorer.oasis.io/${network}/${classification}/address/${addr}`;
+}
+
 export function collectionIsSupported(
   id: string | undefined,
   chainId: number | undefined,

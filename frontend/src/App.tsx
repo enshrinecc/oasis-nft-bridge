@@ -13,6 +13,7 @@ import {
   SupportedCollection,
   chainIsSupported,
   collectionIsSupported,
+  getCollectionExplorerURL,
   getNetworkClassification,
 } from './collections.js';
 import { useVoteStatus } from './hooks/useVoteStatus.js';
@@ -111,7 +112,9 @@ export function App() {
                     <h1>4. Bridge your tokens</h1>
                     <Bridger collection={collection} />
                     <details className="mt-4">
-                      <summary className="my-2 cursor-pointer text-gray-400">Helpful Information</summary>
+                      <summary className="my-2 cursor-pointer text-gray-400">
+                        Helpful Information
+                      </summary>
                       <ul className="text-left mx-auto max-w-prose list-disc px-4 text-gray-400">
                         <li className="my-3">
                           The Escrin Smart Worker that implements the bridge runs in a trusted
@@ -160,6 +163,13 @@ export function App() {
                     <Loader color="#8ab1cf" loading={true} size={40} />
                   </>
                 )}
+                <a
+                  className="block mt-6 underline"
+                  target="_blank"
+                  href={getCollectionExplorerURL(collection, chain!.id)}
+                >
+                  View collection in the Oasis Explorer
+                </a>
               </div>
             )}
           </Connected>
