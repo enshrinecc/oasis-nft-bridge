@@ -148,7 +148,7 @@ contract AbutmentTest is Test {
             })
         );
 
-        vm.expectRevert(IdentityRegistry.InterfaceUnsupported.selector);
+        vm.expectRevert(IIdentityRegistry.InterfaceUnsupported.selector);
         ep.setTrustedIdentity(
             Abutment.TrustedIdentity({
                 registry: IdentityRegistry(address(0)),

@@ -1,0 +1,25 @@
+{
+  "env": "mainnet",
+  "emerald": {
+    "network": {
+      "chainId": 42262,
+      "rpcUrl": "https://emerald.oasis.dev"
+    },
+    "identity": {
+      "registry": "0xFcfed3be2d333F24854cA8d3A351E772272D5842",
+      "id": "0xae0b015d603647b5017a8b56f7ce92d81efc2167218eab391a9e79ab7df75251"
+    },
+    "abutment": "0x031B36a65f15239b2EbE481218Cd7e076a6f16f7"
+  },
+  "sapphire": {
+    "network": {
+      "chainId": 23294,
+      "rpcUrl": "https://sapphire.oasis.io"
+    },
+    "identity": {
+      "registry": "0x6e4039C3330681F91bC4bd394dc1a5AAE615FB36",
+      "id": "0x2d21702e45ee7647667ae18f63fd8b4abd1f9b916412bcd5bd278c085ec94587"
+    },
+    "abutment": "0x9ff55e0931174909E723B2CEc591b638cF2aaCC8"
+  }
+}

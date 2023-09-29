@@ -29,6 +29,15 @@ const hooks = {
   eth_getTransactionByHash(_req, _res, next) {
     setTimeout(next, 7000);
   },
+  eth_estimateGas({ jsonrpc, id }, res) {
+    res.writeHead(200, { 'content-type': 'application/json' }).end(
+      JSON.stringify({
+        jsonrpc,
+        id,
+        result: '0x4c4b40',
+      }),
+    );
+  }
 };
 
 const server = http.createServer((req, res) => {
