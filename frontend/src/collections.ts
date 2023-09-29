@@ -4,13 +4,18 @@ const abutments: Partial<Record<SupportedChain, Address>> = {
   1337: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
   31337: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
   0x5aff: '0xCf05273778a80416098eC9219F40caaEe9b27A36',
+  0x5afe: '0x9ff55e0931174909E723B2CEc591b638cF2aaCC8',
   0xa515: '0x63c13Ee9BecC8f35dC034F026Ae8d18A4D1E7f0E',
+  0xa516: '0x031B36a65f15239b2EbE481218Cd7e076a6f16f7',
 };
 
 const collections: Record<SupportedCollection, Collection> = {
   'ai-rose': {
     name: 'AI Rose',
-    chains: {},
+    chains: {
+      0xa516: '0x0f4c5A429166608f9225E094F7E66B0bF68a53B9',
+      0x5afe: '0x24E0E56A214Bd3e8e546Ba04505eF3E9E5EF216a',
+    },
   },
   test: {
     name: 'Test Token',
