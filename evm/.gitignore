@@ -1,16 +1,10 @@
+broadcast/
 coverage/
 coverage.json
 
 # Compiler files
 cache/
 out/
-
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/*/1337/
-/broadcast/multi/TestEnv.s.sol**
-/broadcast/**/dry-run/
 
 # Docs
 docs/

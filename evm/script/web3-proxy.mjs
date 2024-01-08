@@ -11,6 +11,7 @@ if (!process.argv[2]) {
   console.error(`usage: node web3-proxy.mjs <upstream gateway hostname>`);
   process.exit(1);
 }
+const upstreamUrl = new URL(process.argv[2]);
 
 const hooks = {
   '*': (req, _res, next) => {
@@ -37,7 +38,7 @@ const hooks = {
         result: '0x4c4b40',
       }),
     );
-  }
+  },
 };
 
 const server = http.createServer((req, res) => {
@@ -56,11 +57,11 @@ const server = http.createServer((req, res) => {
     .on('end', () => {
       const req = JSON.parse(Buffer.concat(bodyChunks));
       const proxyPass = () => {
-        const proxyReq = https.request(
+        const proxyReq = (upstreamUrl.protocol === 'http:' ? http : https).request(
           {
-            hostname: process.argv[2],
-            port: '443',
-            path: '/',
+            hostname: upstreamUrl.hostname,
+            port: upstreamUrl.port,
+            path: upstreamUrl.pathname,
             method: 'POST',
             headers: {
               'content-type': 'application/json',
@@ -81,4 +82,4 @@ const server = http.createServer((req, res) => {
     .on('error', abort);
 });
 
-server.listen(8545);
+server.listen(upstreamUrl.port === '8545' ? 8547 : 8545);
